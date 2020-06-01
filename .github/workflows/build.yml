@@ -27,5 +27,5 @@ jobs:
           VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-          docker tag my-bot $IMAGE_ID:$VERSION
+          docker tag pipehub $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
