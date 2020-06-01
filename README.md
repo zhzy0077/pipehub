@@ -1,8 +1,7 @@
 PipeHub
 ===
 ![Build](https://github.com/zhzy0077/pipehub/workflows/Build/badge.svg)
-[![MIT Licensed](https://img.shields.io/github/license/zhzy0077/pipehub.svg)](https://github.com/zhzy0077/pipehub/LICENSE)
-
+![MIT Licensed](https://img.shields.io/github/license/zhzy0077/pipehub)
 
 ## Get started
 It's a service that pipelines web request to your WeChat Account.
