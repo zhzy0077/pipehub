@@ -2115,6 +2115,8 @@ dependencies = [
  "dotenv",
  "log",
  "oauth2",
+ "openssl",
+ "openssl-probe",
  "r2d2",
  "rand 0.7.3",
  "serde 1.0.110",

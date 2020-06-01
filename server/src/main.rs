@@ -1,3 +1,4 @@
+extern crate openssl;
 #[macro_use]
 extern crate diesel;
 #[macro_use]
@@ -38,6 +39,7 @@ embed_migrations!("./migrations");
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
+    openssl_probe::init_ssl_cert_env_vars();
     dotenv().ok();
 
     let config = PipeHubConfig::new()?;
@@ -87,7 +89,7 @@ fn migrate(config: &PipeHubConfig) -> () {
 fn session(key: &[u8]) -> CookieSession {
     CookieSession::private(key)
         .name("session")
-        .secure(false)
+        .secure(true)
         .http_only(true)
 }
 
