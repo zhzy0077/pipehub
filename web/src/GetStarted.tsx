@@ -28,10 +28,10 @@ function GetStarted() {
             在右上角通过 GitHub 登录后, 填上你之前得到的企业 ID, Agent ID 和 Secret 并更新后, 就可以通过 User 页面中的 Callback URL 发送消息了. 请求示例:
           </Text>
           <Text block style={{ marginTop: '5px' }}>
-            1. GET https://pipehub.net/send/abcde?text=helloworld.
+            1. GET https://www.pipehub.net/send/abcde?text=helloworld.
           </Text>
           <Text block style={{ marginTop: '5px' }}>
-            1. POST https://pipehub.net/send/abcde. 在 Payload 中的所有内容都会被推送.
+            1. POST https://www.pipehub.net/send/abcde. 在 Payload 中的所有内容都会被推送.
           </Text>
         </div>
       </Stack.Item>
