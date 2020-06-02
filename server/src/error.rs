@@ -11,6 +11,7 @@ pub enum Error {
     Io(std::io::Error),
     Dependency(String),
     Unexpected(String),
+    User(&'static str),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -23,7 +24,9 @@ impl Display for Error {
 
 impl ResponseError for Error {
     fn error_response(&self) -> Response<Body> {
-        Response::InternalServerError().body(self.to_string())
+        let mut builder = Response::InternalServerError();
+        builder.extensions_mut().insert(self.to_string());
+        builder.body(Body::Empty)
     }
 }
 

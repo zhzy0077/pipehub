@@ -12,7 +12,7 @@ actix-rt = "1.1"
 actix-session = "0.3"
 actix-threadpool = "0.3"
 actix-web = "2.0"
-appinsights = "0.1"
+appinsights = { git = "https://github.com/zhzy0077/appinsights-rs", rev = "8d5b281" }
 async-trait = "0.1"
 awc = "1.0"
 base58 = "0.1"
@@ -30,4 +30,4 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 simplelog = "0.8"
 url = "1.7"
-uuid = {version = "0.8", features = ["v4"]}
+uuid = {version = "0.8", features = ["v4", "serde"]}
