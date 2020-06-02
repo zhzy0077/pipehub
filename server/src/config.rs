@@ -4,17 +4,19 @@ use log::Level;
 use serde::Deserialize;
 use url::Url;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct PipeHubConfig {
     pub host: String,
     pub port: u16,
     pub domain: String,
+    // If we need to make cookie secure.
+    pub https: bool,
     pub database_url: String,
     pub github: GitHubConfig,
     pub log: LogConfig,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct GitHubConfig {
     pub client_id: String,
     pub client_secret: String,
