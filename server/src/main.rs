@@ -164,7 +164,8 @@ fn track_request<
         .cloned()
         .expect("No request id found.");
     let method = req.method().to_string();
-    let uri = Uri::from_str(&req.uri().to_string()).unwrap();
+    // Remove the query part from the log.
+    let uri = Uri::from_str(req.uri().path()).expect("Uri not found.");
     let start = Instant::now();
     let future = srv.call(req);
     async move {
