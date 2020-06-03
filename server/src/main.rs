@@ -7,6 +7,7 @@ extern crate diesel_migrations;
 use crate::config::PipeHubConfig;
 use crate::error::Result;
 use crate::logger::ApplicationLogger;
+use crate::send::WeChatAccessToken;
 use actix_files::Files;
 use actix_http::body::{Body, MessageBody, ResponseBody};
 use actix_http::http::{Method, StatusCode, Uri};
@@ -17,6 +18,7 @@ use actix_web::middleware::{Compress, Logger};
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use actix_web::{Error as AWError, HttpResponse};
+use dashmap::DashMap;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::embed_migrations;
@@ -47,6 +49,7 @@ mod wechat;
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
+pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
 
 embed_migrations!("./migrations");
 
@@ -67,11 +70,13 @@ async fn main() -> Result<()> {
     let session_key: [u8; 32] = rand::random();
     let github_client = Arc::new(client(&config));
     let https = config.https;
+    let access_token_cache: Arc<AccessTokenCache> = Arc::new(DashMap::new());
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
             .data(github_client.clone())
             .data(logger.clone())
+            .data(access_token_cache.clone())
             .wrap_fn(head_request)
             .wrap_fn(track_request)
             .wrap_fn(request_id_injector)

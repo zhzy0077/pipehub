@@ -1,7 +1,7 @@
 use crate::error::{Error, Result};
 use crate::logger::ApplicationLogger;
 use crate::models::WechatWork;
-use crate::{data, DbPool, Response};
+use crate::{data, AccessTokenCache, DbPool, Response};
 use actix_http::client::Connector;
 use actix_web::client::Client;
 use actix_web::{web, Error as AWError, HttpRequest, HttpResponse};
@@ -13,13 +13,14 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-struct WeChatAccessToken {
+pub struct WeChatAccessToken {
     #[serde(rename = "errcode")]
     error_code: u64,
     #[serde(rename = "errmsg")]
     error_message: String,
     access_token: String,
-    expires_in: u64,
+    #[serde(rename = "expires_in", deserialize_with = "crate::util::expires_at")]
+    expires_at: Instant,
 }
 
 #[derive(Debug, Serialize)]
@@ -60,6 +61,7 @@ pub async fn send(
     payload: web::Bytes,
     web::Query(message): web::Query<Message>,
     logger: web::Data<Arc<ApplicationLogger>>,
+    access_token_cache: web::Data<Arc<AccessTokenCache>>,
     req: HttpRequest,
 ) -> std::result::Result<HttpResponse, AWError> {
     let request_id: Uuid = req
@@ -73,17 +75,37 @@ pub async fn send(
     let wechat = data::find_wechat_by_app_id(request_id, Arc::clone(&logger), pool, app_id)
         .await?
         .ok_or_else(|| Error::User("Unknown APP ID."))?;
-    let token = get_token(request_id, &logger, &wechat).await?;
-    if let Message { text: Some(text) } = message {
-        do_send(request_id, &logger, &wechat, &token, text).await?;
+    let mut token = access_token_cache.get(&app_id);
+    if token.is_none() || token.as_ref().unwrap().expires_at.le(&Instant::now()) {
+        let new_token = get_token(request_id, &logger, &wechat).await?;
+        access_token_cache.insert(app_id, new_token);
+        token = access_token_cache.get(&app_id);
+    }
+    let message = if let Message { text: Some(text) } = message {
+        text
     } else if let Ok(text) = String::from_utf8(payload.to_vec()) {
-        do_send(request_id, &logger, &wechat, &token, text).await?;
+        text
+    } else {
+        return Err(Error::User("No message is provided."))?;
+    };
+
+    let mut token = token.unwrap();
+    let mut retry_count = 0;
+    while let Err(e) = do_send(request_id, &logger, &wechat, token.value(), message.clone()).await {
+        if retry_count > 3 {
+            return Err(e)?;
+        } else {
+            retry_count += 1;
+        }
+        let new_token = get_token(request_id, &logger, &wechat).await?;
+        access_token_cache.insert(app_id, new_token);
+        token = access_token_cache.get(&app_id).unwrap();
     }
 
     Ok(HttpResponse::Ok().json(Response {
         request_id,
         success: true,
-        error_message: "".to_string(),
+        error_message: format!("Retried {} times.", retry_count),
     }))
 }
 
