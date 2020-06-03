@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Label, TextField, PrimaryButton, Separator, Text } from '@fluentui/react';
+import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack } from '@fluentui/react';
+import { useBoolean } from '@uifabric/react-hooks';
 
 function User() {
   const [user, setUser] = useState({} as User);
   const [wechat, setWechat] = useState({} as Wechat);
+  const [isCalloutVisible, { toggle: toggleIsCalloutVisible }] = useBoolean(false);
 
   useEffect(() => {
     fetch("/wechat")
@@ -44,6 +46,20 @@ function User() {
         console.log(res);
       });
   };
+  const resetKey = () => {
+    toggleIsCalloutVisible();
+    fetch('/user/reset_key', {
+      method: "POST",
+    })
+      .then(res => {
+        if (res.status < 400) {
+          alert("Success");
+        }
+        return res.json();
+      }).then((entity: User) => {
+        setUser(entity);
+      });
+  }
   const onCorpIdChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
     setWechat({
       ...wechat,
@@ -71,6 +87,40 @@ function User() {
       <Label>Agent ID</Label> <TextField onChange={onAgentIdChange} value={wechat.agent_id ? wechat.agent_id.toString() : ""}></TextField>
       <Label>Secret</Label> <TextField onChange={onSecretChange} value={wechat.secret}></TextField>
       <PrimaryButton style={{ marginTop: '10px' }} onClick={update}>更新</PrimaryButton>
+
+      <DefaultButton
+        style={{ marginLeft: '20px' }}
+        onClick={toggleIsCalloutVisible}
+        id="resetKey"
+        text="重置 AppKey"
+      />
+      {isCalloutVisible ? (
+        <div>
+          <Callout
+            style={{ width: '300px' }}
+            target={`#resetKey`}
+            onDismiss={toggleIsCalloutVisible}
+            setInitialFocus
+          >
+            <div style={{ padding: '20px 24px 20px' }}>
+              <Label>
+                重置 App Key 后目前用来发送的 URL 会发生变化, 所有调用方都需要使用新的 URL. 确定要重置吗?
+              </Label>
+
+              <Stack style={{ marginTop: '20px' }} gap={8} horizontal horizontalAlign="space-evenly">
+                <PrimaryButton
+                  onClick={resetKey}
+                  text="确定"
+                />
+                <DefaultButton
+                  onClick={toggleIsCalloutVisible}
+                  text="取消"
+                />
+              </Stack>
+            </div>
+          </Callout>
+        </div>
+      ) : null}
 
       <Separator />
       <Text variant='xLarge'>您的 Callback URL 是: {user.callback_url}</Text>

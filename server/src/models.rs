@@ -7,7 +7,7 @@ use crate::schema::*;
 use base58::ToBase58;
 use std::env;
 
-#[derive(Queryable, Serialize)]
+#[derive(Queryable, Serialize, AsChangeset, Clone)]
 pub struct Tenant {
     #[serde(skip)]
     pub id: i64,
