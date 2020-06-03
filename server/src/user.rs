@@ -1,12 +1,13 @@
+use crate::error::{Error, Result};
 use crate::logger::ApplicationLogger;
 use crate::models::{Tenant, UserTenant};
-use crate::{data, error::Result, DbPool};
+use crate::{data, DbPool};
 use actix_http::body::Body;
 use actix_http::http::header;
 use actix_session::Session;
 use actix_web::client::Client;
 use actix_web::error::Error as AWError;
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{get, post, web, HttpRequest, HttpResponse};
 use oauth2::basic::{BasicClient, BasicTokenResponse};
 use oauth2::prelude::SecretNewType;
 use oauth2::{AuthorizationCode, CsrfToken, TokenResponse};
@@ -99,7 +100,7 @@ pub async fn callback(
                 "",
                 success,
             );
-            let token = token?;
+            let token = token.map_err(|e| Error::from(e))?;
 
             let access_token = token.access_token().secret();
             let http_client = Client::default();
@@ -147,6 +148,45 @@ pub async fn callback(
             .header("Location", "/")
             .body(Body::Empty)),
     }
+}
+
+#[post("/user/reset_key")]
+pub async fn reset_key(
+    session: Session,
+    pool: web::Data<DbPool>,
+    logger: web::Data<Arc<ApplicationLogger>>,
+    req: HttpRequest,
+) -> std::result::Result<HttpResponse, AWError> {
+    let request_id: Uuid = req
+        .extensions()
+        .get::<Uuid>()
+        .cloned()
+        .expect("No request id found.");
+
+    if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
+        if let Some(tenant) =
+            data::find_tenant_by_id(request_id, Arc::clone(&logger), pool.clone(), tenant_id)
+                .await?
+        {
+            let new_tenant = Tenant {
+                id: tenant.id,
+                app_id: rand::random(),
+                github_login: tenant.github_login,
+                github_id: tenant.github_id,
+            };
+            data::update_tenant(
+                request_id,
+                Arc::clone(&logger),
+                pool.clone(),
+                new_tenant.clone(),
+            )
+            .await?;
+
+            return Ok(HttpResponse::Ok().json(UserTenant::from(new_tenant)));
+        };
+    }
+
+    Ok(HttpResponse::Unauthorized().body(Body::Empty))
 }
 
 #[derive(Debug, Deserialize)]

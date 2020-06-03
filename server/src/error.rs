@@ -1,4 +1,5 @@
 use actix_http::body::Body;
+use actix_http::http::StatusCode;
 use actix_http::{Response, ResponseError};
 use std::fmt;
 use std::fmt::Display;
@@ -23,10 +24,17 @@ impl Display for Error {
 }
 
 impl ResponseError for Error {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            Error::User(_) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
     fn error_response(&self) -> Response<Body> {
-        let mut builder = Response::InternalServerError();
-        builder.extensions_mut().insert(self.to_string());
-        builder.body(Body::Empty)
+        let mut resp = Response::new(self.status_code());
+        resp.extensions_mut().insert(self.to_string());
+        resp.set_body(Body::Empty)
     }
 }
 
@@ -59,13 +67,18 @@ impl From<actix_http::Error> for Error {
         Error::Execution(e.to_string())
     }
 }
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Self {
+        Error::Unexpected(e.to_string())
+    }
+}
 
 impl<E> From<actix_threadpool::BlockingError<E>> for Error
 where
     E: fmt::Debug,
 {
     fn from(e: actix_threadpool::BlockingError<E>) -> Self {
-        Error::DataAccess(e.to_string())
+        Error::Execution(e.to_string())
     }
 }
 

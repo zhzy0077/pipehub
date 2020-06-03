@@ -93,6 +93,31 @@ pub(crate) async fn insert_tenant(
     Ok(tenant)
 }
 
+pub(crate) async fn update_tenant(
+    request_id: Uuid,
+    logger: Arc<ApplicationLogger>,
+    pool: web::Data<DbPool>,
+    new_tenant: Tenant,
+) -> Result<()> {
+    use crate::schema::tenants;
+    use crate::schema::tenants::dsl::*;
+    let conn = pool.get()?;
+    web::block(move || -> Result<()> {
+        let query = diesel::update(tenants::table)
+            .filter(id.eq(new_tenant.id))
+            .set(&new_tenant);
+        let start = Instant::now();
+        let sql = debug_query::<Pg, _>(&query).to_string();
+        query.execute(&conn)?;
+        log_query(request_id, &logger, "TENANT", sql, start.elapsed(), true);
+
+        Ok(())
+    })
+    .await?;
+
+    Ok(())
+}
+
 pub(crate) async fn find_wechat_by_id(
     request_id: Uuid,
     logger: Arc<ApplicationLogger>,

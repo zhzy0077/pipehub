@@ -5,12 +5,12 @@ extern crate diesel;
 extern crate diesel_migrations;
 
 use crate::config::PipeHubConfig;
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::logger::ApplicationLogger;
 use crate::send::WeChatAccessToken;
 use actix_files::Files;
 use actix_http::body::{Body, MessageBody, ResponseBody};
-use actix_http::http::{Method, StatusCode, Uri};
+use actix_http::http::{header, Method, StatusCode, Uri};
 use actix_http::HttpMessage;
 use actix_session::CookieSession;
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse};
@@ -50,6 +50,8 @@ mod wechat;
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
+const HINT: &'static str =
+    "If you believe it's unexpected. Please help us by creating an issue with this response at https://github.com/zhzy0077/pipehub.";
 
 embed_migrations!("./migrations");
 
@@ -83,6 +85,7 @@ async fn main() -> Result<()> {
             .wrap(session(&session_key[..], https))
             .wrap(Compress::default())
             .wrap(Logger::default())
+            .service(user::reset_key)
             .service(user::user)
             .service(user::callback)
             .service(wechat::wechat)
@@ -106,6 +109,7 @@ pub struct Response {
     request_id: Uuid,
     success: bool,
     error_message: String,
+    hint: String,
 }
 
 fn migrate(config: &PipeHubConfig) -> () {
@@ -172,7 +176,10 @@ fn track_request<
         let mut res: std::result::Result<ServiceResponse<Body>, AWError> = future.await;
         let duration = start.elapsed();
         match res {
-            Ok(ref response) if response.status() != StatusCode::INTERNAL_SERVER_ERROR => {
+            Ok(ref response)
+                if response.status() != StatusCode::BAD_REQUEST
+                    && !response.status().is_server_error() =>
+            {
                 logger.track_request(
                     request_id,
                     &method,
@@ -187,17 +194,22 @@ fn track_request<
                     .extensions()
                     .get::<String>()
                     .cloned()
-                    .expect("No error message found.");
+                    .unwrap_or_else(|| "Unexpected error occurred.".to_owned());
+                let status = response.status();
                 logger.track_trace(request_id, Level::Error, &error_message);
-                let status = response.status().to_string();
+                let status_str = response.status().to_string();
 
-                logger.track_request(request_id, &method, uri, duration, &status);
+                logger.track_request(request_id, &method, uri, duration, &status_str);
                 res = res.map(|res| {
-                    res.into_response(HttpResponse::InternalServerError().json(Response {
-                        request_id,
-                        success: false,
-                        error_message,
-                    }))
+                    res.into_response(json(
+                        HttpResponse::new(status),
+                        &Response {
+                            request_id,
+                            success: !status.is_server_error(),
+                            error_message,
+                            hint: HINT.to_owned(),
+                        },
+                    ))
                 })
             }
             Err(_) => unimplemented!("Should not reach here."),
@@ -224,5 +236,17 @@ fn head_request<
         } else {
             res
         }
+    }
+}
+
+fn json<T: Serialize>(mut resp: HttpResponse, value: &T) -> HttpResponse {
+    match serde_json::to_string(value) {
+        Ok(body) => {
+            resp.headers_mut()
+                .insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
+
+            resp.set_body(Body::from(body))
+        }
+        Err(e) => AWError::from(Error::from(e)).into(),
     }
 }
