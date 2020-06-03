@@ -1,6 +1,7 @@
+use crate::error::{Error, Result};
 use crate::logger::ApplicationLogger;
 use crate::models::{Tenant, UserTenant};
-use crate::{data, error::Result, DbPool};
+use crate::{data, DbPool};
 use actix_http::body::Body;
 use actix_http::http::header;
 use actix_session::Session;
@@ -99,7 +100,7 @@ pub async fn callback(
                 "",
                 success,
             );
-            let token = token?;
+            let token = token.map_err(|e| Error::from(e))?;
 
             let access_token = token.access_token().secret();
             let http_client = Client::default();

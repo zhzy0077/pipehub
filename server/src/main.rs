@@ -50,6 +50,8 @@ mod wechat;
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
+const HINT: &'static str =
+    "If you believe it's unexpected. Please help us by creating an issue with this response at https://github.com/zhzy0077/pipehub.";
 
 embed_migrations!("./migrations");
 
@@ -107,6 +109,7 @@ pub struct Response {
     request_id: Uuid,
     success: bool,
     error_message: String,
+    hint: String,
 }
 
 fn migrate(config: &PipeHubConfig) -> () {
@@ -204,6 +207,7 @@ fn track_request<
                             request_id,
                             success: !status.is_server_error(),
                             error_message,
+                            hint: HINT.to_owned(),
                         },
                     ))
                 })

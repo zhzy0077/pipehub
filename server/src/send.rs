@@ -105,7 +105,8 @@ pub async fn send(
     Ok(HttpResponse::Ok().json(Response {
         request_id,
         success: true,
-        error_message: format!("Retried {} times.", retry_count),
+        error_message: "".to_owned(),
+        hint: format!("Retried {} times.", retry_count),
     }))
 }
 

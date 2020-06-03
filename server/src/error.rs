@@ -78,7 +78,7 @@ where
     E: fmt::Debug,
 {
     fn from(e: actix_threadpool::BlockingError<E>) -> Self {
-        Error::DataAccess(e.to_string())
+        Error::Execution(e.to_string())
     }
 }
 
