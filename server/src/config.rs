@@ -29,14 +29,9 @@ pub struct GitHubConfig {
 pub struct LogConfig {
     #[serde(default)]
     pub instrumentation_key: String,
-    pub logger: Logger,
+    #[serde(default)]
+    pub log_dir: String,
     pub level: Level,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub enum Logger {
-    ApplicationInsight,
-    TermLogger,
 }
 
 impl PipeHubConfig {
