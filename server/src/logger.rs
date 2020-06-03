@@ -6,14 +6,15 @@ use appinsights::telemetry::{
     RemoteDependencyTelemetry, RequestTelemetry, SeverityLevel, Telemetry, TraceTelemetry,
 };
 use appinsights::{InMemoryChannel, TelemetryClient};
-use log::{Level, Log, RecordBuilder};
-use simplelog::{Config, TermLogger, TerminalMode};
+use chrono::Utc;
+use log::{info, Level};
+use simplelog::{Config, WriteLogger};
+use std::fs::File;
 use std::time::Duration;
 use uuid::Uuid;
 
 pub struct ApplicationLogger {
     app_insight: Option<TelemetryClient<InMemoryChannel>>,
-    term_logger: Option<TermLogger>,
 }
 
 impl ApplicationLogger {
@@ -26,14 +27,7 @@ impl ApplicationLogger {
             app_insight.track(event);
         }
 
-        if let Some(ref term_logger) = self.term_logger {
-            term_logger.log(
-                &RecordBuilder::new()
-                    .level(level)
-                    .args(format_args!("{} {}", id, message))
-                    .build(),
-            );
-        }
+        info!("{} {}", id, message);
     }
 
     pub fn track_request(
@@ -51,20 +45,13 @@ impl ApplicationLogger {
             app_insight.track(event);
         }
 
-        if let Some(ref term_logger) = self.term_logger {
-            term_logger.log(
-                &RecordBuilder::new()
-                    .level(Level::Info)
-                    .args(format_args!(
-                        "{} {} {} {}",
-                        method,
-                        uri,
-                        duration.as_millis(),
-                        response_code
-                    ))
-                    .build(),
-            );
-        }
+        info!(
+            "{} {} {} {}",
+            method,
+            uri,
+            duration.as_millis(),
+            response_code
+        );
     }
 
     pub fn track_dependency(
@@ -94,22 +81,15 @@ impl ApplicationLogger {
             app_insight.track(event);
         }
 
-        if let Some(ref term_logger) = self.term_logger {
-            term_logger.log(
-                &RecordBuilder::new()
-                    .level(Level::Info)
-                    .args(format_args!(
-                        "{} {} {} {} {} {}",
-                        dependency_type,
-                        target,
-                        name,
-                        duration.as_millis(),
-                        result_code,
-                        data
-                    ))
-                    .build(),
-            );
-        }
+        info!(
+            "{} {} {} {} {} {}",
+            dependency_type,
+            target,
+            name,
+            duration.as_millis(),
+            result_code,
+            data
+        );
     }
 
     fn severity(level: &Level) -> SeverityLevel {
@@ -127,28 +107,25 @@ impl ApplicationLogger {
     pub async fn new(log_config: &LogConfig) -> Self {
         let i_key = log_config.instrumentation_key.clone();
         let level = log_config.level.clone();
+        let log_dir = log_config.log_dir.clone();
+
         web::block(move || -> Result<ApplicationLogger> {
             let app_insight = if i_key != String::default() {
                 Some(TelemetryClient::new(i_key.clone()))
             } else {
                 None
             };
-            let term_logger = Some(*TermLogger::new(
-                level.to_level_filter(),
-                Config::default(),
-                TerminalMode::Mixed,
-            ));
-            TermLogger::init(
-                level.to_level_filter(),
-                Config::default(),
-                TerminalMode::Mixed,
-            )
-            .expect("Unable to bind term logger.");
+            if log_dir != String::default() {
+                let file = format!("{}/{}.log", log_dir, Utc::now().format("%Y-%m-%dT%H-%M-%S"));
+                WriteLogger::init(
+                    level.to_level_filter(),
+                    Config::default(),
+                    File::create(&file).unwrap(),
+                )
+                .expect("Unable to bind write logger.");
+            }
 
-            Ok(ApplicationLogger {
-                app_insight,
-                term_logger,
-            })
+            Ok(ApplicationLogger { app_insight })
         })
         .await
         .expect("Failed to initialize logger.")
