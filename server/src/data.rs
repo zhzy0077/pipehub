@@ -100,9 +100,12 @@ pub(crate) async fn update_tenant(
     new_tenant: Tenant,
 ) -> Result<()> {
     use crate::schema::tenants;
+    use crate::schema::tenants::dsl::*;
     let conn = pool.get()?;
     web::block(move || -> Result<()> {
-        let query = diesel::update(tenants::table).set(&new_tenant);
+        let query = diesel::update(tenants::table)
+            .filter(id.eq(new_tenant.id))
+            .set(&new_tenant);
         let start = Instant::now();
         let sql = debug_query::<Pg, _>(&query).to_string();
         query.execute(&conn)?;

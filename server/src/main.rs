@@ -173,7 +173,10 @@ fn track_request<
         let mut res: std::result::Result<ServiceResponse<Body>, AWError> = future.await;
         let duration = start.elapsed();
         match res {
-            Ok(ref response) if response.status().is_success() => {
+            Ok(ref response)
+                if response.status() != StatusCode::BAD_REQUEST
+                    && !response.status().is_server_error() =>
+            {
                 logger.track_request(
                     request_id,
                     &method,
@@ -188,7 +191,7 @@ fn track_request<
                     .extensions()
                     .get::<String>()
                     .cloned()
-                    .expect("No error message found.");
+                    .unwrap_or_else(|| "Unexpected error occurred.".to_owned());
                 let status = response.status();
                 logger.track_trace(request_id, Level::Error, &error_message);
                 let status_str = response.status().to_string();

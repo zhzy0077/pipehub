@@ -138,6 +138,12 @@ impl ApplicationLogger {
                 Config::default(),
                 TerminalMode::Mixed,
             ));
+            TermLogger::init(
+                level.to_level_filter(),
+                Config::default(),
+                TerminalMode::Mixed,
+            )
+            .expect("Unable to bind term logger.");
 
             Ok(ApplicationLogger {
                 app_insight,

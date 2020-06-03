@@ -23,11 +23,11 @@ function Faq() {
           </Text>
           <Label style={{ marginTop: '10px' }}>为啥要做 PipeHub ?</Label>
           <Text block>
-            我个人强依赖上述的几个用法, 就做了这个玩意, 想到可能也有人有和我类似的需求, 就买了个域名搭了这个网站, 希望能帮到谁吧.
+            我个人强依赖上述的几个用法, 就做了 PipeHub, 想到可能也有人有和我类似的需求, 就买了个域名接入了 GitHub, 希望能帮更多的朋友.
           </Text>
           <Label style={{ marginTop: '10px' }}>PipeHub 和 Server 酱有啥区别?</Label>
           <Text block>
-            我以前也是 Server 酱的用户, 后来 Server 酱改成模板消息后就收不到推送很苦恼, 就做了PipeHub. PipeHub 使企业微信进行推送, 可靠性更好的也更安全.
+            我以前也是 Server 酱的用户, 后来 Server 酱改成模板消息后就收不到推送很苦恼, 就做了PipeHub. PipeHub 使企业微信进行推送, 可靠性更好的同时也更安全.
           </Text>
           <Label style={{ marginTop: '10px' }}>PipeHub 收费吗?</Label>
           <Text block>
@@ -37,12 +37,12 @@ function Faq() {
           <Text block>
             目前开源在: <Link href="https://github.com/zhzy0077/PipeHub">https://github.com/zhzy0077/PipeHub</Link>, 欢迎 Star.
           </Text>
-          <Label style={{ marginTop: '10px' }}>我的数据在哪里?</Label>
+          <Label style={{ marginTop: '10px' }}>我的隐私?</Label>
           <Text block>
             隐私是每个人最重要的权利之一, PipeHub 通过以下方式保障您的隐私:
           </Text>
           <Text block style={{ marginTop: '5px' }}>
-            1. PipeHub 仅依赖企业微信, 您可以(这也是推荐的方式)注册一个单独的企业用于推送, PipeHub 除了可以向您推送消息以外对您一无所知.
+            1. PipeHub 仅依赖企业微信, 无需关注第三方公众号, 您可以(这也是推荐的方式)注册一个单独的企业用于推送, PipeHub 除了可以向您推送消息以外对您一无所知.
           </Text>
           <Text block style={{ marginTop: '5px' }}>
             2. PipeHub 在 GitHub 登录过程中不要求任何权限, 也就是说 PipeHub 并不比一个不小心点开您 GitHub 主页的人知道更多.
