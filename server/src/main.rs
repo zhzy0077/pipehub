@@ -28,12 +28,13 @@ use oauth2::basic::BasicClient;
 use oauth2::prelude::*;
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use r2d2::PooledConnection;
+use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
 use std::future::Future;
 use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 mod config;
@@ -79,6 +80,7 @@ async fn main() -> Result<()> {
             .data(github_client.clone())
             .data(logger.clone())
             .data(access_token_cache.clone())
+            .data(http_client())
             .wrap_fn(head_request)
             .wrap_fn(track_request)
             .wrap_fn(request_id_injector)
@@ -249,4 +251,13 @@ fn json<T: Serialize>(mut resp: HttpResponse, value: &T) -> HttpResponse {
         }
         Err(e) => AWError::from(Error::from(e)).into(),
     }
+}
+
+fn http_client() -> Client {
+    ClientBuilder::new()
+        .connect_timeout(Duration::from_secs(3))
+        .timeout(Duration::from_secs(5))
+        .pool_idle_timeout(Duration::from_secs(5 * 60))
+        .build()
+        .expect("Failed to create reqwest client.")
 }

@@ -64,12 +64,12 @@ impl From<diesel::result::Error> for Error {
 
 impl From<actix_http::Error> for Error {
     fn from(e: actix_http::Error) -> Self {
-        Error::Execution(e.to_string())
+        Error::Execution(format!("{:?}", e))
     }
 }
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
-        Error::Unexpected(e.to_string())
+        Error::Unexpected(format!("{:?}", e))
     }
 }
 
@@ -78,13 +78,13 @@ where
     E: fmt::Debug,
 {
     fn from(e: actix_threadpool::BlockingError<E>) -> Self {
-        Error::Execution(e.to_string())
+        Error::Execution(format!("{:?}", e))
     }
 }
 
 impl From<oauth2::RequestTokenError<oauth2::basic::BasicErrorResponseType>> for Error {
     fn from(e: oauth2::RequestTokenError<oauth2::basic::BasicErrorResponseType>) -> Self {
-        Error::Dependency(e.to_string())
+        Error::Dependency(format!("{:?}", e))
     }
 }
 
@@ -96,12 +96,12 @@ impl From<base58::FromBase58Error> for Error {
 
 impl From<actix_http::client::SendRequestError> for Error {
     fn from(e: actix_http::client::SendRequestError) -> Self {
-        Error::Dependency(e.to_string())
+        Error::Dependency(format!("{:?}", e))
     }
 }
 
-impl From<awc::error::JsonPayloadError> for Error {
-    fn from(e: awc::error::JsonPayloadError) -> Self {
-        Error::Dependency(e.to_string())
+impl std::convert::From<reqwest::Error> for Error {
+    fn from(e: reqwest::Error) -> Self {
+        Error::Dependency(format!("{:?}", e))
     }
 }
