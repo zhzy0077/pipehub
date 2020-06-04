@@ -8,7 +8,7 @@ use appinsights::telemetry::{
 use appinsights::{InMemoryChannel, TelemetryClient};
 use chrono::Utc;
 use log::{info, Level};
-use simplelog::{Config, WriteLogger};
+use simplelog::{ConfigBuilder, WriteLogger};
 use std::fs::File;
 use std::time::Duration;
 use uuid::Uuid;
@@ -119,7 +119,9 @@ impl ApplicationLogger {
                 let file = format!("{}/{}.log", log_dir, Utc::now().format("%Y-%m-%dT%H-%M-%S"));
                 WriteLogger::init(
                     level.to_level_filter(),
-                    Config::default(),
+                    ConfigBuilder::new()
+                        .set_time_format_str("%Y-%m-%d %H:%M:%S%.3f")
+                        .build(),
                     File::create(&file).unwrap(),
                 )
                 .expect("Unable to bind write logger.");
