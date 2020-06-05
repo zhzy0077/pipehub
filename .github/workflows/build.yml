@@ -11,9 +11,6 @@ on:
     branches:
       - master
 
-env:
-  IMAGE_NAME: pipehub
-
 jobs:
   build:
     runs-on: ubuntu-18.04
@@ -26,6 +23,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}  
           registry: docker.pkg.github.com
-          repository: docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          repository: docker.pkg.github.com/${{ github.repository }}/pipehub
           tag_with_ref: true
           push: ${{ startsWith(github.ref, 'refs/tags/') }}
