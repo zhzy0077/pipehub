@@ -25,7 +25,9 @@ pub struct WeChatAccessToken {
 #[derive(Debug, Serialize)]
 struct WeChatMessage {
     #[serde(rename = "touser")]
-    to_user: String,
+    to_user: Option<String>,
+    #[serde(rename = "toparty")]
+    to_party: Option<String>,
     #[serde(rename = "agentid")]
     agent_id: i64,
     #[serde(rename = "msgtype")]
@@ -52,6 +54,7 @@ struct WeChatSendResponse {
 #[derive(Debug, Deserialize)]
 pub struct Message {
     text: Option<String>,
+    to_party: Option<String>,
 }
 
 pub async fn send(
@@ -81,7 +84,11 @@ pub async fn send(
         access_token_cache.insert(app_id, new_token);
         token = access_token_cache.get(&app_id);
     }
-    let message = if let Message { text: Some(text) } = message {
+    let text = if let Message {
+        text: Some(text),
+        to_party: _,
+    } = message
+    {
         text
     } else if let Ok(text) = String::from_utf8(payload.to_vec()) {
         text
@@ -97,7 +104,8 @@ pub async fn send(
         &logger,
         &wechat,
         token.value(),
-        message.clone(),
+        text.clone(),
+        message.to_party.clone(),
     )
     .await
     {
@@ -158,6 +166,7 @@ async fn do_send(
     wechat: &WechatWork,
     token: &WeChatAccessToken,
     msg: String,
+    to_party: Option<String>,
 ) -> Result<()> {
     let start = Instant::now();
     let url = format!(
@@ -167,7 +176,11 @@ async fn do_send(
     let response = client
         .post(&url)
         .json(&WeChatMessage {
-            to_user: "@all".to_string(),
+            to_user: match to_party {
+                Some(_) => None,
+                None => Some("@all".to_owned()),
+            },
+            to_party,
             agent_id: wechat.agent_id,
             message_type: "text".to_string(),
             text: WeChatMessageText { content: msg },
