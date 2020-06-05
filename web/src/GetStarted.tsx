@@ -31,7 +31,10 @@ function GetStarted() {
             1. GET https://www.pipehub.net/send/abcde?text=helloworld.
           </Text>
           <Text block style={{ marginTop: '5px' }}>
-            1. POST https://www.pipehub.net/send/abcde. 在 Payload 中的所有内容都会被推送.
+            2. POST https://www.pipehub.net/send/abcde. 在 Payload 中的所有内容都会被推送.
+          </Text>
+          <Text block style={{ marginTop: '5px' }}>
+            3. 也可以在 GET 或者 POST 的 URL 中添加参数to_party=对应的部门ID, 会推送到对应的部门中所有人.
           </Text>
         </div>
       </Stack.Item>

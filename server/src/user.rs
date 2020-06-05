@@ -5,12 +5,12 @@ use crate::{data, DbPool};
 use actix_http::body::Body;
 use actix_http::http::header;
 use actix_session::Session;
-use actix_web::client::Client;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, web, HttpRequest, HttpResponse};
 use oauth2::basic::{BasicClient, BasicTokenResponse};
 use oauth2::prelude::SecretNewType;
 use oauth2::{AuthorizationCode, CsrfToken, TokenResponse};
+use reqwest::Client;
 use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Instant;
@@ -57,6 +57,7 @@ pub struct Callback {
 pub async fn callback(
     session: Session,
     client: web::Data<Arc<BasicClient>>,
+    http_client: web::Data<Client>,
     pool: web::Data<DbPool>,
     web::Query(callback): web::Query<Callback>,
     logger: web::Data<Arc<ApplicationLogger>>,
@@ -103,14 +104,14 @@ pub async fn callback(
             let token = token.map_err(|e| Error::from(e))?;
 
             let access_token = token.access_token().secret();
-            let http_client = Client::default();
             let start = Instant::now();
-            let mut response = http_client
+            let response = http_client
                 .get("https://api.github.com/user")
                 .header(header::USER_AGENT, "PipeHub")
                 .header(header::AUTHORIZATION, format!("token {}", access_token))
                 .send()
-                .await?;
+                .await
+                .map_err(|e| Error::from(e))?;
             logger.track_dependency(
                 request_id,
                 "GET https://api.github.com/user",
@@ -121,7 +122,10 @@ pub async fn callback(
                 access_token,
                 response.status().is_success(),
             );
-            let github_user = response.json::<GithubUser>().await?;
+            let github_user = response
+                .json::<GithubUser>()
+                .await
+                .map_err(|e| Error::from(e))?;
             match data::find_tenant_by_github_id(
                 request_id,
                 Arc::clone(&logger),
