@@ -23,7 +23,7 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::embed_migrations;
 use dotenv::dotenv;
-use log::Level;
+use log::{info, Level};
 use oauth2::basic::BasicClient;
 use oauth2::prelude::*;
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
@@ -35,6 +35,7 @@ use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::time;
 use uuid::Uuid;
 
 mod config;
@@ -74,13 +75,20 @@ async fn main() -> Result<()> {
     let github_client = Arc::new(client(&config));
     let https = config.https;
     let access_token_cache: Arc<AccessTokenCache> = Arc::new(DashMap::new());
+    let http_client = http_client();
+
+    let cloned_client = http_client.clone();
+    tokio::spawn(async move {
+        ping(cloned_client).await;
+    });
+
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
             .data(github_client.clone())
             .data(logger.clone())
             .data(access_token_cache.clone())
-            .data(http_client())
+            .data(http_client.clone())
             .wrap_fn(head_request)
             .wrap_fn(track_request)
             .wrap_fn(request_id_injector)
@@ -255,9 +263,21 @@ fn json<T: Serialize>(mut resp: HttpResponse, value: &T) -> HttpResponse {
 
 fn http_client() -> Client {
     ClientBuilder::new()
-        .connect_timeout(Duration::from_secs(3))
+        .connect_timeout(Duration::from_secs(5))
         .timeout(Duration::from_secs(5))
-        .pool_idle_timeout(Duration::from_secs(5 * 60))
+        .pool_idle_timeout(Duration::from_secs(60))
         .build()
         .expect("Failed to create reqwest client.")
+}
+
+async fn ping(client: Client) {
+    let mut delay = time::interval(Duration::from_secs(30));
+    loop {
+        delay.tick().await;
+        let resp = client
+            .get("https://qyapi.weixin.qq.com/cgi-bin/gettoken")
+            .send()
+            .await;
+        info!("Ping gettoken result {:?}.", resp)
+    }
 }
