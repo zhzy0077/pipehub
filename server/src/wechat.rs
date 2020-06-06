@@ -48,6 +48,8 @@ pub async fn update(
         .expect("No request id found.");
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         entity.tenant_id = tenant_id;
+        entity.corp_id = entity.corp_id.trim().to_string();
+        entity.secret = entity.secret.trim().to_string();
         data::upsert_wechat(request_id, Arc::clone(&logger), pool, entity).await?;
         Ok(HttpResponse::NoContent().body(Body::Empty))
     } else {
