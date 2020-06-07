@@ -75,15 +75,13 @@ pub async fn send(
     let app_key = key.into_inner().from_base58().map_err(|e| Error::from(e))?;
     let app_id = i64::from_le_bytes((&app_key[0..8]).try_into().expect("Unexpected"));
 
-    let wechat = data::find_wechat_by_app_id(request_id, Arc::clone(&logger), pool, app_id)
+    let tenant = data::find_tenant_by_app_id(request_id, Arc::clone(&logger), pool.clone(), app_id)
         .await?
         .ok_or_else(|| Error::User("Unknown APP ID."))?;
-    let mut token = access_token_cache.get(&app_id);
-    if token.is_none() || token.as_ref().unwrap().expires_at.le(&Instant::now()) {
-        let new_token = get_token(&http_client, request_id, &logger, &wechat).await?;
-        access_token_cache.insert(app_id, new_token);
-        token = access_token_cache.get(&app_id);
-    }
+    let wechat = data::find_wechat_by_app_id(request_id, Arc::clone(&logger), pool, app_id)
+        .await?
+        .ok_or_else(|| Error::User("No WeChat credentials configured."))?;
+
     let text = if let Message {
         text: Some(text),
         to_party: _,
@@ -95,6 +93,22 @@ pub async fn send(
     } else {
         return Err(Error::User("No message is provided."))?;
     };
+
+    if tenant
+        .block_list
+        .split(",")
+        .map(|word| word.trim())
+        .any(|block_word| text.contains(block_word))
+    {
+        return Err(Error::User("Message blocked."))?;
+    }
+
+    let mut token = access_token_cache.get(&app_id);
+    if token.is_none() || token.as_ref().unwrap().expires_at.le(&Instant::now()) {
+        let new_token = get_token(&http_client, request_id, &logger, &wechat).await?;
+        access_token_cache.insert(app_id, new_token);
+        token = access_token_cache.get(&app_id);
+    }
 
     let mut token = token.unwrap();
     let mut retry_count = 0;

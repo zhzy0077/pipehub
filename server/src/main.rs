@@ -23,13 +23,14 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::embed_migrations;
 use dotenv::dotenv;
-use log::{info, Level};
+use log::{info, Level, LevelFilter};
 use oauth2::basic::BasicClient;
 use oauth2::prelude::*;
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use r2d2::PooledConnection;
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
+use simplelog::{Config, TermLogger, TerminalMode};
 use std::future::Future;
 use std::io;
 use std::str::FromStr;
@@ -61,6 +62,8 @@ embed_migrations!("./migrations");
 async fn main() -> Result<()> {
     openssl_probe::init_ssl_cert_env_vars();
     dotenv().ok();
+
+    TermLogger::init(LevelFilter::Debug, Config::default(), TerminalMode::Mixed).unwrap();
 
     let config = PipeHubConfig::new()?;
 
@@ -97,6 +100,7 @@ async fn main() -> Result<()> {
             .wrap(Logger::default())
             .service(user::reset_key)
             .service(user::user)
+            .service(user::update)
             .service(user::callback)
             .service(wechat::wechat)
             .service(wechat::update)

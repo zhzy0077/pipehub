@@ -14,7 +14,7 @@ function User() {
       }).then((wechat: Wechat) => {
         setWechat(wechat);
       })
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     fetch("/user")
@@ -41,6 +41,19 @@ function User() {
         if (res.status < 400) {
           alert("Success");
         }
+        return res.text();
+      }).then(res => {
+        console.log(res);
+      });
+
+    fetch('/user', {
+      method: "PUT",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(user)
+    })
+      .then(res => {
         return res.text();
       }).then(res => {
         console.log(res);
@@ -78,6 +91,12 @@ function User() {
       secret: newVal || '',
     });
   }
+  const onBlockListChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
+    setUser({
+      ...user,
+      block_list: newVal || '',
+    });
+  }
   return (
     <div>
       <Label>GitHub 账号</Label> <TextField readOnly value={user.github_login}></TextField>
@@ -86,6 +105,7 @@ function User() {
       <Label>企业 ID</Label> <TextField onChange={onCorpIdChange} value={wechat.corp_id}></TextField>
       <Label>Agent ID</Label> <TextField onChange={onAgentIdChange} value={wechat.agent_id ? wechat.agent_id.toString() : ""}></TextField>
       <Label>Secret</Label> <TextField onChange={onSecretChange} value={wechat.secret}></TextField>
+      <Label>黑名单(使用英语逗号,分隔的一系列字符串, 如果消息包含任意一个, 将不会推送.)</Label> <TextField onChange={onBlockListChange} value={user.block_list}></TextField>
       <PrimaryButton style={{ marginTop: '10px' }} onClick={update}>更新</PrimaryButton>
 
       <DefaultButton
@@ -133,6 +153,7 @@ interface User {
   github_id: number,
   app_key: string,
   callback_url: string,
+  block_list: string,
 }
 
 interface Wechat {

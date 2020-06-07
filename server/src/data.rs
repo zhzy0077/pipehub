@@ -65,6 +65,33 @@ pub(crate) async fn find_tenant_by_github_id(
     Ok(tenant)
 }
 
+pub(crate) async fn find_tenant_by_app_id(
+    request_id: Uuid,
+    logger: Arc<ApplicationLogger>,
+    pool: web::Data<DbPool>,
+    tenant_app_id: i64,
+) -> Result<Option<Tenant>> {
+    use crate::schema::tenants::dsl::*;
+    let conn = pool.get()?;
+    let tenant = web::block(move || -> Result<Option<Tenant>> {
+        let query = tenants.filter(app_id.eq(tenant_app_id));
+        let start = Instant::now();
+        let tenant = query.first::<Tenant>(&conn).optional()?;
+        log_query(
+            request_id,
+            &logger,
+            "TENANT",
+            debug_query::<Pg, _>(&query),
+            start.elapsed(),
+            true,
+        );
+        Ok(tenant)
+    })
+    .await?;
+
+    Ok(tenant)
+}
+
 pub(crate) async fn insert_tenant(
     request_id: Uuid,
     logger: Arc<ApplicationLogger>,

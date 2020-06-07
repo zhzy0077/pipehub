@@ -1,13 +1,12 @@
 use diesel::Insertable;
 use diesel::Queryable;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::schema::*;
 use base58::ToBase58;
 use std::env;
 
-#[derive(Queryable, Serialize, AsChangeset, Clone)]
+#[derive(Queryable, Serialize, Deserialize, AsChangeset, Clone)]
 pub struct Tenant {
     #[serde(skip)]
     pub id: i64,
@@ -15,6 +14,7 @@ pub struct Tenant {
     pub app_id: i64,
     pub github_login: String,
     pub github_id: i64,
+    pub block_list: String,
 }
 
 #[derive(Serialize)]
@@ -53,6 +53,7 @@ impl Tenant {
             app_id,
             github_login,
             github_id,
+            block_list: "".to_string(),
         }
     }
 
