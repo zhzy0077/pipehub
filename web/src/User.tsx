@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack } from '@fluentui/react';
 import { useBoolean } from '@uifabric/react-hooks';
+import Send from './Send';
 
 function User() {
   const [user, setUser] = useState({} as User);
@@ -124,6 +125,8 @@ function User() {
 
       <Separator />
       <Text variant='xLarge'>您的 Callback URL 是: {user.callback_url}</Text>
+      <Separator />
+      <Send user={user} />
     </div>
   );
 }
