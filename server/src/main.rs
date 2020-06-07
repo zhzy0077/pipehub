@@ -24,14 +24,13 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::embed_migrations;
 use dotenv::dotenv;
-use log::{info, Level, LevelFilter};
+use log::{info, Level};
 use oauth2::basic::BasicClient;
 use oauth2::prelude::*;
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use r2d2::PooledConnection;
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
-use simplelog::{Config, TermLogger, TerminalMode};
 use std::future::Future;
 use std::io;
 use std::str::FromStr;
@@ -54,7 +53,7 @@ mod wechat;
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
-const HINT: &'static str =
+const HINT: &str =
     "If you believe it's unexpected. Please help us by creating an issue with this response at https://github.com/zhzy0077/pipehub.";
 
 embed_migrations!("./migrations");
@@ -63,8 +62,6 @@ embed_migrations!("./migrations");
 async fn main() -> Result<()> {
     openssl_probe::init_ssl_cert_env_vars();
     dotenv().ok();
-
-    TermLogger::init(LevelFilter::Debug, Config::default(), TerminalMode::Mixed).unwrap();
 
     let config = PipeHubConfig::new()?;
 
@@ -133,7 +130,7 @@ pub struct Response {
     hint: String,
 }
 
-fn migrate(config: &PipeHubConfig) -> () {
+fn migrate(config: &PipeHubConfig) {
     let connection =
         PgConnection::establish(&config.database_url).expect("Unable to connect to DB.");
 
