@@ -31,7 +31,7 @@ function Send(props: SendProps) {
                 <Label>Payload</Label>
             </Stack.Item>
             <Stack.Item>
-                <TextField multiline rows={5} onChange={onMessageUpdate} value={message} />
+                <TextField multiline rows={3} onChange={onMessageUpdate} value={message} />
             </Stack.Item>
             <Stack.Item>
                 <PrimaryButton onClick={send}>测试发送</PrimaryButton>
