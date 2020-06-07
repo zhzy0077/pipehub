@@ -106,7 +106,7 @@ impl ApplicationLogger {
 impl ApplicationLogger {
     pub async fn new(log_config: &LogConfig) -> Self {
         let i_key = log_config.instrumentation_key.clone();
-        let level = log_config.level.clone();
+        let level = log_config.level;
         let log_dir = log_config.log_dir.clone();
 
         web::block(move || -> Result<ApplicationLogger> {

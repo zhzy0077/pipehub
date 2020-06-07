@@ -72,7 +72,7 @@ pub async fn send(
         .get::<Uuid>()
         .cloned()
         .expect("No request id found.");
-    let app_key = key.into_inner().from_base58().map_err(|e| Error::from(e))?;
+    let app_key = key.into_inner().from_base58().map_err(Error::from)?;
     let app_id = i64::from_le_bytes((&app_key[0..8]).try_into().expect("Unexpected"));
 
     let tenant = data::find_tenant_by_app_id(request_id, Arc::clone(&logger), pool.clone(), app_id)
@@ -91,16 +91,16 @@ pub async fn send(
     } else if let Ok(text) = String::from_utf8(payload.to_vec()) {
         text
     } else {
-        return Err(Error::User("No message is provided."))?;
+        return Err(Error::User("No message is provided.").into());
     };
 
     if tenant
         .block_list
-        .split(",")
+        .split(',')
         .map(|word| word.trim())
         .any(|block_word| text.contains(block_word))
     {
-        return Err(Error::User("Message blocked."))?;
+        return Err(Error::User("Message blocked.").into());
     }
 
     let mut token = access_token_cache.get(&app_id);
@@ -124,7 +124,7 @@ pub async fn send(
     .await
     {
         if retry_count > 3 {
-            return Err(e)?;
+            return Err(e.into());
         } else {
             retry_count += 1;
         }

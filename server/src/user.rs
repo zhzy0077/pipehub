@@ -16,8 +16,8 @@ use std::sync::Arc;
 use std::time::Instant;
 use uuid::Uuid;
 
-pub const TENANT_ID_KEY: &'static str = "tenant_id";
-pub const STATE_KEY: &'static str = "state";
+pub const TENANT_ID_KEY: &str = "tenant_id";
+pub const STATE_KEY: &str = "state";
 
 #[get("/user")]
 pub async fn user(
@@ -101,7 +101,7 @@ pub async fn callback(
                 "",
                 success,
             );
-            let token = token.map_err(|e| Error::from(e))?;
+            let token = token.map_err(Error::from)?;
 
             let access_token = token.access_token().secret();
             let start = Instant::now();
@@ -111,7 +111,7 @@ pub async fn callback(
                 .header(header::AUTHORIZATION, format!("token {}", access_token))
                 .send()
                 .await
-                .map_err(|e| Error::from(e))?;
+                .map_err(Error::from)?;
             logger.track_dependency(
                 request_id,
                 "GET https://api.github.com/user",
@@ -122,10 +122,7 @@ pub async fn callback(
                 access_token,
                 response.status().is_success(),
             );
-            let github_user = response
-                .json::<GithubUser>()
-                .await
-                .map_err(|e| Error::from(e))?;
+            let github_user = response.json::<GithubUser>().await.map_err(Error::from)?;
             match data::find_tenant_by_github_id(
                 request_id,
                 Arc::clone(&logger),
