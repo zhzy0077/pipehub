@@ -6,6 +6,7 @@ edition = "2018"
 repository = "https://github.com/zhzy0077/PipeHub"
 
 [dependencies]
+actix-cors = "0.2"
 actix-files = "0.2"
 actix-http = { version = "1.0", features = ["openssl", "compress"], default-features = false }
 actix-rt = "1.1"

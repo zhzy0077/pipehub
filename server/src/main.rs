@@ -8,6 +8,7 @@ use crate::config::PipeHubConfig;
 use crate::error::{Error, Result};
 use crate::logger::ApplicationLogger;
 use crate::send::WeChatAccessToken;
+use actix_cors::Cors;
 use actix_files::Files;
 use actix_http::body::{Body, MessageBody, ResponseBody};
 use actix_http::http::{header, Method, StatusCode, Uri};
@@ -106,6 +107,12 @@ async fn main() -> Result<()> {
             .service(wechat::update)
             .service(
                 web::resource("/send/{key}")
+                    .wrap(
+                        Cors::new()
+                            .send_wildcard()
+                            .allowed_methods(vec!["GET", "POST"])
+                            .finish(),
+                    )
                     .route(web::get().to(send::send))
                     .route(web::post().to(send::send)),
             )
