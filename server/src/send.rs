@@ -94,12 +94,12 @@ pub async fn send(
         return Err(Error::User("No message is provided.").into());
     };
 
-    if tenant.block_list != ""
-        && tenant
-            .block_list
-            .split(',')
-            .map(|word| word.trim())
-            .any(|block_word| text.contains(block_word))
+    if tenant
+        .block_list
+        .split(',')
+        .map(|word| word.trim())
+        .filter(|word| !word.is_empty())
+        .any(|block_word| text.contains(block_word))
     {
         return Err(Error::User("Message blocked.").into());
     }
