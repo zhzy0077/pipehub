@@ -212,7 +212,7 @@ pub async fn update(
         {
             let new_tenant = Tenant {
                 id: tenant.id,
-                app_id: tenant.id,
+                app_id: tenant.app_id,
                 github_login: tenant.github_login,
                 github_id: tenant.github_id,
                 block_list: new_tenant.block_list,
