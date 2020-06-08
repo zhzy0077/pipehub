@@ -54,7 +54,7 @@ pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
 const HINT: &str =
-    "If you believe it's unexpected. Please help us by creating an issue with this response at https://github.com/zhzy0077/pipehub.";
+    "If you believe it's unexpected, please help us by creating an issue with this response at https://github.com/zhzy0077/pipehub.";
 
 embed_migrations!("./migrations");
 
