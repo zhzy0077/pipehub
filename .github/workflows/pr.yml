@@ -44,6 +44,4 @@ jobs:
           CORP_ID: ${{ secrets.CORP_ID }}
           SECRET: ${{ secrets.SECRET }}
           ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd ../tests
-          cargo run ../server/target/debug/server ../server/ http://localhost:8080
+        run: cargo run ../server/target/debug/server ../server/ http://localhost:8080
