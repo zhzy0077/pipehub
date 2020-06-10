@@ -43,7 +43,7 @@ jobs:
           AGENT_ID: ${{ secrets.AGENT_ID }}
           CORP_ID: ${{ secrets.CORP_ID }}
           SECRET: ${{ secrets.SECRET }}
-          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
           cd tests
           cargo run ../server/target/debug/server ../server/ http://localhost:8080
