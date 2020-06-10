@@ -1,5 +1,5 @@
-import React, { CSSProperties, useContext, useState } from 'react';
-import { Stack, FontSizes, Icon, Text, Label, TextField, PrimaryButton } from '@fluentui/react';
+import React, { useState } from 'react';
+import { Stack, Label, TextField, PrimaryButton } from '@fluentui/react';
 import User from './User';
 
 interface SendProps {
