@@ -34,7 +34,7 @@ jobs:
           cd web
           yarn && yarn build
           cd ..
-          cp -r web/build/* server/static
+          cp -r web/build/ server/static
           cd server
           cargo build
 
