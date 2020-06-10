@@ -19,7 +19,7 @@ base58 = "0.1"
 chrono = "0.4"
 config = "0.10"
 # Use preview version that is lock-free.
-dashmap = "4.0.0-rc5"
+dashmap = "4.0.0-rc6"
 diesel = { version = "1.4", features = ["postgres", "r2d2"] }
 diesel_migrations = "1.4"
 dotenv = "0.15"
