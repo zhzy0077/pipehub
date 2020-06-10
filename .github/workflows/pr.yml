@@ -26,14 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: docker/build-push-action@v1
-        with:
-          repository: pipehub-pr
-          tags: local
-          push: false
+      - name: Replace .env
+        run: mv ./server/.env.example ./server/.env
 
-      - name: Run docker
-        run: docker run --env-file ./server/.env.example --network=host --rm pipehub-pr:local
+      - name: Run server
+        run: |
+          cd server
+          cargo build
+          cargo run &> /dev/null &
 
       - name: Test
         run: curl -v http://localhost:8080
