@@ -9,7 +9,7 @@ jobs:
   pr:
     runs-on: ubuntu-latest
 
-    container: ubuntu:latest
+    container: rust:latest
 
     services:
       postgres:
