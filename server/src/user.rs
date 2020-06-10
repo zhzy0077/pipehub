@@ -53,6 +53,57 @@ pub struct Callback {
     state: CsrfToken,
 }
 
+#[derive(Deserialize)]
+pub struct LoginCallback {
+    access_token: String,
+}
+
+// It's for testing purpose.
+#[post("/login")]
+pub async fn login(
+    session: Session,
+    http_client: web::Data<Client>,
+    pool: web::Data<DbPool>,
+    web::Query(login): web::Query<LoginCallback>,
+    logger: web::Data<Arc<ApplicationLogger>>,
+    req: HttpRequest,
+) -> std::result::Result<HttpResponse, AWError> {
+    let request_id: Uuid = req
+        .extensions()
+        .get::<Uuid>()
+        .cloned()
+        .expect("No request id found.");
+    let access_token = login.access_token;
+    let response = http_client
+        .get("https://api.github.com/user")
+        .header(header::USER_AGENT, "PipeHub")
+        .header(header::AUTHORIZATION, format!("token {}", access_token))
+        .send()
+        .await
+        .map_err(Error::from)?;
+    let github_user = response.json::<GithubUser>().await.map_err(Error::from)?;
+    match data::find_tenant_by_github_id(
+        request_id,
+        Arc::clone(&logger),
+        pool.clone(),
+        github_user.id,
+    )
+    .await?
+    {
+        Some(tenant) => session.set(TENANT_ID_KEY, tenant.id)?,
+        None => {
+            let app_id: i64 = rand::random();
+            let tenant = Tenant::new(app_id, github_user.login, github_user.id);
+            let tenant =
+                data::insert_tenant(request_id, Arc::clone(&logger), pool.clone(), tenant).await?;
+            session.set(TENANT_ID_KEY, tenant.id)?
+        }
+    }
+    Ok(HttpResponse::Found()
+        .header("Location", "/#/user")
+        .body(Body::Empty))
+}
+
 #[get("/callback")]
 pub async fn callback(
     session: Session,

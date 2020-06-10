@@ -38,8 +38,7 @@ jobs:
           cd server
           cargo build
 
-      - name: Run
-        run:  cargo run &> /dev/null &
-
       - name: Test
-        run: curl -v http://localhost:8080
+        run: |
+          cd ../tests
+          cargo run ../server/target/debug/server ../server/ http://localhost:8080
