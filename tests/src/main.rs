@@ -34,10 +34,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let executable = args.next().unwrap();
     let work_dir = args.next().unwrap();
     let endpoint = args.next().unwrap();
-    let access_token = env::var("access_token").expect("No access_token found.");
-    let corp_id = env::var("corp_id").unwrap();
-    let secret = env::var("secret").unwrap();
-    let agent_id = i32::from_str(&env::var("agent_id").unwrap()).unwrap();
+    let access_token = env::var("ACCESS_TOKEN").expect("No access_token found.");
+    let corp_id = env::var("CORP_ID").unwrap();
+    let secret = env::var("SECRET").unwrap();
+    let agent_id = i32::from_str(&env::var("AGENT_ID").unwrap()).unwrap();
 
     // 0. Start server.
     thread::spawn(move || {
