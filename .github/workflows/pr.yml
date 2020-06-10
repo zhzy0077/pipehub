@@ -28,15 +28,12 @@ jobs:
 
       - uses: docker/build-push-action@v1
         with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}  
-          registry: docker.pkg.github.com
-          repository: ${{ github.repository }}/pipehub-pr
-          tags: latest
+          repository: pipehub-pr
+          tags: local
+          push: false
 
-      # It will be wrong if multiple pipelines run at same time. Depends on the fix of https://github.com/docker/build-push-action/issues/24.
       - name: Run docker
-        run: docker run --env-file ./server/.env.example --network=host --rm docker.pkg.github.com/${{ github.repository }}/pipehub-pr:latest
+        run: docker run --env-file ./server/.env.example --network=host --rm pipehub-pr:local
 
       - name: Test
         run: curl -v http://localhost:8080
