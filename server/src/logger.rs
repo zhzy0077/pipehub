@@ -8,7 +8,7 @@ use appinsights::telemetry::{
 use appinsights::{InMemoryChannel, TelemetryClient};
 use chrono::Utc;
 use log::{info, Level};
-use simplelog::{ConfigBuilder, WriteLogger};
+use simplelog::{ConfigBuilder, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
 use std::time::Duration;
 use uuid::Uuid;
@@ -125,6 +125,15 @@ impl ApplicationLogger {
                     File::create(&file).unwrap(),
                 )
                 .expect("Unable to bind write logger.");
+            } else {
+                TermLogger::init(
+                    level.to_level_filter(),
+                    ConfigBuilder::new()
+                        .set_time_format_str("%Y-%m-%d %H:%M:%S%.3f")
+                        .build(),
+                    TerminalMode::Mixed,
+                )
+                .expect("Unable to bind terminal logger.");
             }
 
             Ok(ApplicationLogger { app_insight })
