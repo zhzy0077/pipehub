@@ -1,0 +1,49 @@
+name: PR
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Replace .env
+        run: mv ./server/.env.example ./server/.env
+
+      - name: Build
+        run: |
+          cd web
+          yarn && yarn build
+          cd ..
+          cp -r web/build/ server/static
+          cd server
+          cargo build
+
+      - name: Test
+        env:
+          AGENT_ID: ${{ secrets.AGENT_ID }}
+          CORP_ID: ${{ secrets.CORP_ID }}
+          SECRET: ${{ secrets.SECRET }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          cd tests
+          cargo run ../server/target/debug/server ../server/ http://localhost:8080

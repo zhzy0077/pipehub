@@ -100,6 +100,7 @@ async fn main() -> Result<()> {
             .service(user::user)
             .service(user::update)
             .service(user::callback)
+            .service(user::login)
             .service(wechat::wechat)
             .service(wechat::update)
             .service(

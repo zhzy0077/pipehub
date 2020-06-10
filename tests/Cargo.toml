@@ -1,0 +1,12 @@
+[package]
+name = "tests"
+version = "0.2.3"
+authors = ["Zhiyuan Zheng <zhzy0077@hotmail.com>"]
+edition = "2018"
+
+[dependencies]
+reqwest = { version = "0.10", features = ["json", "cookies"] }
+tokio = { version = "0.2", features = ["full"] }
+serde = "1.0"
+dotenv = "0.15"
+simplelog = "0.8"
