@@ -1,0 +1,42 @@
+name: PR
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+
+    container: ubuntu:latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: docker/build-push-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  
+          registry: docker.pkg.github.com
+          repository: ${{ github.repository }}/pipehub-pr
+          tags: latest
+
+      # It will be wrong if multiple pipelines run at same time. Depends on the fix of https://github.com/docker/build-push-action/issues/24.
+      - name: Run docker
+        run: docker run --env-file ./server/.env.example --network=host --rm docker.pkg.github.com/${{ github.repository }}/pipehub-pr:latest
+
+      - name: Test
+        run: curl -v http://localhost:8080
