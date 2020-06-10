@@ -29,11 +29,17 @@ jobs:
       - name: Replace .env
         run: mv ./server/.env.example ./server/.env
 
-      - name: Run server
+      - name: Build
         run: |
+          cd web
+          yarn && yarn build
+          cd ..
+          cp -r web/build/* server/static
           cd server
           cargo build
-          cargo run &> /dev/null &
+
+      - name: Run
+        run:  cargo run &> /dev/null &
 
       - name: Test
         run: curl -v http://localhost:8080
