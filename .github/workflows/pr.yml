@@ -29,7 +29,16 @@ jobs:
       - name: Replace .env
         run: mv ./server/.env.example ./server/.env
 
+      - name: Setup database
+        env:
+            DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+        run: |
+          cargo install diesel_cli --no-default-features --features postgres
+          diesel migration run --migration-dir ./server/migrations
+
       - name: Build
+        env:
+            DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
         run: |
           cd web
           yarn && yarn build

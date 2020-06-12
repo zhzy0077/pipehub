@@ -1,7 +1,8 @@
+use crate::data::Pool;
 use crate::error::{Error, Result};
 use crate::logger::ApplicationLogger;
 use crate::models::WechatWork;
-use crate::{data, AccessTokenCache, DbPool, Response};
+use crate::{AccessTokenCache, Response};
 use actix_web::{web, Error as AWError, HttpRequest, HttpResponse};
 use base58::FromBase58;
 use reqwest::Client;
@@ -58,7 +59,7 @@ pub struct Message {
 }
 
 pub async fn send(
-    pool: web::Data<DbPool>,
+    pool: Pool,
     key: web::Path<String>,
     payload: web::Bytes,
     web::Query(message): web::Query<Message>,
@@ -75,10 +76,12 @@ pub async fn send(
     let app_key = key.into_inner().from_base58().map_err(Error::from)?;
     let app_id = i64::from_le_bytes((&app_key[0..8]).try_into().expect("Unexpected"));
 
-    let tenant = data::find_tenant_by_app_id(request_id, Arc::clone(&logger), pool.clone(), app_id)
+    let tenant = pool
+        .find_tenant_by_app_id(app_id)
         .await?
         .ok_or_else(|| Error::User("Unknown APP ID."))?;
-    let wechat = data::find_wechat_by_app_id(request_id, Arc::clone(&logger), pool, app_id)
+    let wechat = pool
+        .find_wechat_by_app_id(app_id)
         .await?
         .ok_or_else(|| Error::User("No WeChat credentials configured."))?;
 

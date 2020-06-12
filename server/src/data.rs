@@ -1,277 +1,182 @@
-use crate::error::Result;
-use crate::logger::ApplicationLogger;
+use crate::error::{Error, Result};
 use crate::models::{Tenant, WechatWork};
-use crate::DbPool;
-use actix_web::web;
-use diesel::pg::Pg;
-use diesel::prelude::*;
-use diesel::{debug_query, insert_into};
-use std::fmt::Display;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-use uuid::Uuid;
+use actix_http::Payload;
+use actix_web::{FromRequest, HttpRequest};
+use futures_util::future::{err, ok, BoxFuture, Ready};
+use sqlx::cursor::HasCursor;
+use sqlx::describe::Describe;
+use sqlx::executor::RefExecutor;
+use sqlx::postgres::PgCursor;
+use sqlx::{Cursor, Execute, Executor, PgPool, Postgres};
 
-pub(crate) async fn find_tenant_by_id(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    tenant_id: i64,
-) -> Result<Option<Tenant>> {
-    use crate::schema::tenants::dsl::*;
-    let conn = pool.get()?;
-    let tenant = web::block(move || -> Result<Option<Tenant>> {
-        let query = tenants.filter(id.eq(tenant_id));
-        let start = Instant::now();
-        let tenant = query.first::<Tenant>(&conn).optional()?;
-        log_query(
-            request_id,
-            &logger,
-            "TENANT",
-            debug_query::<Pg, _>(&query),
-            start.elapsed(),
-            true,
-        );
-        Ok(tenant)
-    })
-    .await?;
-
-    Ok(tenant)
+#[derive(Debug, Clone)]
+pub struct Pool {
+    inner: PgPool,
 }
 
-pub(crate) async fn find_tenant_by_github_id(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    tenant_github_id: i64,
-) -> Result<Option<Tenant>> {
-    use crate::schema::tenants::dsl::*;
-    let conn = pool.get()?;
-    let tenant = web::block(move || -> Result<Option<Tenant>> {
-        let query = tenants.filter(github_id.eq(tenant_github_id));
-        let start = Instant::now();
-        let tenant = query.first::<Tenant>(&conn).optional()?;
-        log_query(
-            request_id,
-            &logger,
-            "TENANT",
-            debug_query::<Pg, _>(&query),
-            start.elapsed(),
-            true,
-        );
-        Ok(tenant)
-    })
-    .await?;
+impl<'c> RefExecutor<'c> for &'c Pool {
+    type Database = Postgres;
 
-    Ok(tenant)
+    fn fetch_by_ref<'q, E>(self, query: E) -> <Self::Database as HasCursor<'c, 'q>>::Cursor
+    where
+        E: Execute<'q, Self::Database>,
+    {
+        self.inner.fetch_by_ref(query)
+    }
 }
 
-pub(crate) async fn find_tenant_by_app_id(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    tenant_app_id: i64,
-) -> Result<Option<Tenant>> {
-    use crate::schema::tenants::dsl::*;
-    let conn = pool.get()?;
-    let tenant = web::block(move || -> Result<Option<Tenant>> {
-        let query = tenants.filter(app_id.eq(tenant_app_id));
-        let start = Instant::now();
-        let tenant = query.first::<Tenant>(&conn).optional()?;
-        log_query(
-            request_id,
-            &logger,
-            "TENANT",
-            debug_query::<Pg, _>(&query),
-            start.elapsed(),
-            true,
-        );
-        Ok(tenant)
-    })
-    .await?;
+impl<'p> Executor for &'p Pool {
+    type Database = Postgres;
 
-    Ok(tenant)
+    fn execute<'e, 'q: 'e, 'c: 'e, E: 'e>(
+        &'c mut self,
+        query: E,
+    ) -> BoxFuture<'e, std::result::Result<u64, sqlx::Error>>
+    where
+        E: Execute<'q, Self::Database>,
+    {
+        Box::pin(async move { (&self.inner).execute(query).await })
+    }
+
+    fn fetch<'e, 'q, E>(&'e mut self, query: E) -> <Self::Database as HasCursor<'_, 'q>>::Cursor
+    where
+        E: Execute<'q, Postgres>,
+    {
+        PgCursor::from_pool(&self.inner, query)
+    }
+
+    #[doc(hidden)]
+    fn describe<'e, 'q, E: 'e>(
+        &'e mut self,
+        query: E,
+    ) -> BoxFuture<'e, std::result::Result<Describe<Self::Database>, sqlx::Error>>
+    where
+        E: Execute<'q, Self::Database>,
+    {
+        Box::pin(async move { (&self.inner).describe(query).await })
+    }
 }
 
-pub(crate) async fn insert_tenant(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    tenant: Tenant,
-) -> Result<Tenant> {
-    use crate::schema::tenants::dsl::*;
-    let conn = pool.get()?;
-    let tenant = web::block(move || -> Result<Tenant> {
-        let inserter = tenant.inserter();
-        let query = insert_into(tenants).values(&inserter);
-        let start = Instant::now();
-        let tenant = query.get_result(&conn)?;
-        log_query(
-            request_id,
-            &logger,
-            "TENANT",
-            debug_query::<Pg, _>(&query),
-            start.elapsed(),
-            true,
-        );
-        Ok(tenant)
-    })
-    .await?;
+impl FromRequest for Pool {
+    type Error = Error;
+    type Future = Ready<Result<Self>>;
+    type Config = ();
 
-    Ok(tenant)
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        if let Some(pool) = req.app_data::<Pool>() {
+            ok(pool.clone())
+        } else {
+            err(Error::Unexpected("No db pool found.".to_string()))
+        }
+    }
 }
 
-pub(crate) async fn update_tenant(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    new_tenant: Tenant,
-) -> Result<()> {
-    use crate::schema::tenants;
-    use crate::schema::tenants::dsl::*;
-    let conn = pool.get()?;
-    web::block(move || -> Result<()> {
-        let query = diesel::update(tenants::table)
-            .filter(id.eq(new_tenant.id))
-            .set(&new_tenant);
-        let start = Instant::now();
-        let sql = debug_query::<Pg, _>(&query).to_string();
-        query.execute(&conn)?;
-        log_query(request_id, &logger, "TENANT", sql, start.elapsed(), true);
+impl Pool {
+    pub async fn new(conn_str: &str) -> Result<Pool> {
+        let num_cpus = num_cpus::get() as u32;
+
+        let inner = PgPool::builder().max_size(num_cpus).build(conn_str).await?;
+
+        Ok(Pool { inner })
+    }
+
+    pub async fn find_tenant_by_id(&self, tenant_id: i64) -> Result<Option<Tenant>> {
+        let tenant = sqlx::query_as!(Tenant, "SELECT * FROM tenants WHERE id = $1", tenant_id)
+            .fetch_optional(self)
+            .await?;
+
+        Ok(tenant)
+    }
+
+    pub async fn find_tenant_by_github_id(&self, github_id: i64) -> Result<Option<Tenant>> {
+        let tenant = sqlx::query_as!(
+            Tenant,
+            "SELECT * FROM tenants WHERE github_id = $1",
+            github_id
+        )
+        .fetch_optional(self)
+        .await?;
+
+        Ok(tenant)
+    }
+
+    pub async fn find_tenant_by_app_id(&self, app_id: i64) -> Result<Option<Tenant>> {
+        let tenant = sqlx::query_as!(Tenant, "SELECT * FROM tenants WHERE app_id = $1", app_id)
+            .fetch_optional(self)
+            .await?;
+
+        Ok(tenant)
+    }
+
+    pub async fn insert_tenant(&self, tenant: Tenant) -> Result<Tenant> {
+        let tenant = sqlx::query_as!(
+            Tenant,
+            "INSERT INTO tenants (app_id, github_login, github_id) VALUES ($1, $2, $3) RETURNING *",
+            tenant.app_id,
+            tenant.github_login,
+            tenant.github_id
+        )
+        .fetch_one(self)
+        .await?;
+
+        Ok(tenant)
+    }
+
+    pub async fn update_tenant(&self, tenant: Tenant) -> Result<()> {
+        sqlx::query!(
+            "UPDATE tenants SET app_id = $1, block_list = $2 WHERE id = $3",
+            tenant.app_id,
+            tenant.block_list,
+            tenant.id
+        )
+        .execute(self)
+        .await?;
 
         Ok(())
-    })
-    .await?;
+    }
 
-    Ok(())
-}
+    pub async fn find_wechat_by_id(&self, tenant_id: i64) -> Result<Option<WechatWork>> {
+        let wechat_work = sqlx::query_as!(
+            WechatWork,
+            "SELECT * FROM wechat_works WHERE tenant_id = $1",
+            tenant_id
+        )
+        .fetch_optional(self)
+        .await?;
 
-pub(crate) async fn find_wechat_by_id(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    wechat_tenant_id: i64,
-) -> Result<Option<WechatWork>> {
-    use crate::schema::wechat_works::dsl::*;
-    let conn = pool.get()?;
-    let wechat = web::block(move || -> Result<Option<WechatWork>> {
-        let query = wechat_works.filter(tenant_id.eq(wechat_tenant_id));
-        let start = Instant::now();
-        let wechat = query.first::<WechatWork>(&conn).optional()?;
-        log_query(
-            request_id,
-            &logger,
-            "WECHAT",
-            debug_query::<Pg, _>(&query),
-            start.elapsed(),
-            true,
-        );
-        Ok(wechat)
-    })
-    .await?;
+        Ok(wechat_work)
+    }
 
-    Ok(wechat)
-}
-
-pub(crate) async fn upsert_wechat(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    new_wechat: WechatWork,
-) -> Result<()> {
-    use crate::schema::wechat_works::dsl::*;
-    let conn = pool.get()?;
-    web::block(move || -> Result<()> {
-        conn.transaction(|| -> Result<()> {
-            let query = wechat_works.filter(tenant_id.eq(new_wechat.tenant_id));
-            let start = Instant::now();
-            let wechat: Option<WechatWork> = query.first::<WechatWork>(&conn).optional()?;
-            log_query(
-                request_id,
-                &logger,
-                "WECHAT",
-                debug_query::<Pg, _>(&query),
-                start.elapsed(),
-                true,
-            );
-            if let Some(wechat) = wechat {
-                let query = diesel::update(wechat_works.filter(tenant_id.eq(wechat.tenant_id)))
-                    .set((
-                        corp_id.eq(new_wechat.corp_id),
-                        agent_id.eq(new_wechat.agent_id),
-                        secret.eq(new_wechat.secret),
-                    ));
-                let start = Instant::now();
-                let sql = debug_query::<Pg, _>(&query).to_string();
-                query.execute(&conn)?;
-                log_query(request_id, &logger, "WECHAT", sql, start.elapsed(), true);
-            } else {
-                let query = diesel::insert_into(wechat_works).values(new_wechat.inserter());
-                let sql = debug_query::<Pg, _>(&query).to_string();
-                let start = Instant::now();
-                query.execute(&conn)?;
-                log_query(request_id, &logger, "WECHAT", sql, start.elapsed(), true);
-            }
-            Ok(())
-        })?;
+    pub async fn upsert_wechat(&self, new_wechat: WechatWork) -> Result<()> {
+        sqlx::query!(
+            "INSERT INTO wechat_works (tenant_id, corp_id, agent_id, secret)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (tenant_id)
+                 DO UPDATE SET corp_id  = $2,
+                               agent_id = $3,
+                               secret   = $4
+            ",
+            new_wechat.tenant_id,
+            new_wechat.corp_id,
+            new_wechat.agent_id,
+            new_wechat.secret
+        )
+        .execute(self)
+        .await?;
 
         Ok(())
-    })
-    .await?;
+    }
 
-    Ok(())
-}
+    pub async fn find_wechat_by_app_id(&self, app_id: i64) -> Result<Option<WechatWork>> {
+        let wechat_work = sqlx::query_as!(
+            WechatWork,
+            "SELECT wechat_works.* FROM wechat_works LEFT JOIN tenants ON wechat_works.tenant_id = tenants.id WHERE app_id = $1",
+            app_id
+        )
+        .fetch_optional(self)
+        .await?;
 
-pub(crate) async fn find_wechat_by_app_id(
-    request_id: Uuid,
-    logger: Arc<ApplicationLogger>,
-    pool: web::Data<DbPool>,
-    wechat_app_id: i64,
-) -> Result<Option<WechatWork>> {
-    use crate::schema::tenants;
-    use crate::schema::tenants::dsl::*;
-    use crate::schema::wechat_works;
-
-    let conn = pool.get()?;
-    let wechat = web::block(move || -> Result<Option<WechatWork>> {
-        let query = tenants::table
-            .inner_join(wechat_works::table.on(tenants::id.eq(wechat_works::tenant_id)))
-            .select(wechat_works::all_columns)
-            .filter(app_id.eq(wechat_app_id));
-        let start = Instant::now();
-        let data: Option<WechatWork> = query.first::<WechatWork>(&conn).optional()?;
-        log_query(
-            request_id,
-            &logger,
-            "TENANT",
-            debug_query::<Pg, _>(&query),
-            start.elapsed(),
-            true,
-        );
-        Ok(data)
-    })
-    .await?;
-
-    Ok(wechat)
-}
-
-fn log_query<T>(
-    request_id: Uuid,
-    logger: &ApplicationLogger,
-    table_name: &str,
-    query: T,
-    duration: Duration,
-    success: bool,
-) where
-    T: Display,
-{
-    logger.track_dependency(
-        request_id,
-        &format!("EXECUTE {}", table_name),
-        "SQL",
-        duration,
-        "PostgreSQL",
-        "",
-        &format!("{}", query),
-        success,
-    );
+        Ok(wechat_work)
+    }
 }

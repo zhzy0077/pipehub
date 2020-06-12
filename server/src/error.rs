@@ -82,12 +82,6 @@ where
     }
 }
 
-impl From<oauth2::RequestTokenError<oauth2::basic::BasicErrorResponseType>> for Error {
-    fn from(e: oauth2::RequestTokenError<oauth2::basic::BasicErrorResponseType>) -> Self {
-        Error::Dependency(format!("{:?}", e))
-    }
-}
-
 impl From<base58::FromBase58Error> for Error {
     fn from(e: base58::FromBase58Error) -> Self {
         Error::Unexpected(format!("{:?}", e))
@@ -103,5 +97,11 @@ impl From<actix_http::client::SendRequestError> for Error {
 impl std::convert::From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
         Error::Dependency(format!("{:?}", e))
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(e: sqlx::Error) -> Self {
+        Error::DataAccess(e.to_string())
     }
 }
