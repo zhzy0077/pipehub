@@ -37,6 +37,8 @@ jobs:
           diesel migration run --migration-dir ./server/migrations
 
       - name: Build
+        env:
+            DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
         run: |
           cd web
           yarn && yarn build
@@ -54,3 +56,14 @@ jobs:
         run: |
           cd tests
           cargo run ../server/target/debug/server ../server/ http://localhost:8080
+
+      - uses: docker/build-push-action@v1
+        env:
+            DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  
+          registry: docker.pkg.github.com
+          repository: ${{ github.repository }}/pipehub
+          tag_with_ref: true
+          push: false
