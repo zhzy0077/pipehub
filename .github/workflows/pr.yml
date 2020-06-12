@@ -34,7 +34,7 @@ jobs:
             DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
         run: |
           cargo install diesel_cli --no-default-features --features postgres
-          diesel migration run
+          diesel migration run --migration-dir ./server/migrations
 
       - name: Build
         run: |
