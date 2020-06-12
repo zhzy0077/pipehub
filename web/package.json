@@ -1,6 +1,6 @@
 {
   "name": "pipehub-web",
-  "version": "0.2.3",
+  "version": "0.2.8",
   "private": true,
   "dependencies": {
     "@fluentui/react": "^7.119.0",
