@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    services:
+        postgres:
+          image: postgres
+          env:
+            POSTGRES_PASSWORD: postgres
+          # Set health checks to wait until postgres has started
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
+          ports:
+            - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup database
+        env:
+            DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+        run: |
+          cargo install diesel_cli --no-default-features --features postgres
+          diesel migration run
+
+      - uses: docker/build-push-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  
+          registry: docker.pkg.github.com
+          repository: ${{ github.repository }}/pipehub
+          tag_with_ref: true
