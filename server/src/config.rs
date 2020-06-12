@@ -2,7 +2,6 @@ use crate::error::Result;
 use config::{Config, Environment};
 use log::Level;
 use serde::Deserialize;
-use url::Url;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct PipeHubConfig {
@@ -47,17 +46,5 @@ impl PipeHubConfig {
 
     pub fn bind_addr(&self) -> String {
         format!("{}:{}", self.host, self.port)
-    }
-}
-
-impl GitHubConfig {
-    pub fn auth_url(&self) -> Url {
-        Url::parse(&self.auth_url).unwrap()
-    }
-    pub fn token_url(&self) -> Url {
-        Url::parse(&self.token_url).unwrap()
-    }
-    pub fn callback_url(&self) -> Url {
-        Url::parse(&self.callback_url).unwrap()
     }
 }

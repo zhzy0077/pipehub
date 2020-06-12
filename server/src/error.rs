@@ -105,3 +105,9 @@ impl std::convert::From<reqwest::Error> for Error {
         Error::Dependency(format!("{:?}", e))
     }
 }
+
+impl From<sqlx::Error> for Error {
+    fn from(e: sqlx::Error) -> Self {
+        Error::DataAccess(e.to_string())
+    }
+}

@@ -3,9 +3,13 @@ extern crate openssl;
 extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
+#[macro_use]
+extern crate lazy_static;
 
 use crate::config::PipeHubConfig;
+use crate::data::Pool;
 use crate::error::{Error, Result};
+use crate::github::GitHubClient;
 use crate::logger::ApplicationLogger;
 use crate::send::WeChatAccessToken;
 use actix_cors::Cors;
@@ -20,15 +24,9 @@ use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use actix_web::{Error as AWError, HttpResponse};
 use dashmap::DashMap;
-use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel_migrations::embed_migrations;
+use diesel::{Connection, PgConnection};
 use dotenv::dotenv;
 use log::{info, Level};
-use oauth2::basic::BasicClient;
-use oauth2::prelude::*;
-use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
-use r2d2::PooledConnection;
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
 use std::future::Future;
@@ -42,6 +40,7 @@ use uuid::Uuid;
 mod config;
 mod data;
 mod error;
+mod github;
 mod logger;
 mod models;
 mod schema;
@@ -50,8 +49,6 @@ mod user;
 mod util;
 mod wechat;
 
-pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
-pub type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
 const HINT: &str =
     "If you believe it's unexpected, please help us by creating an issue with this response at https://github.com/zhzy0077/pipehub.";
@@ -64,16 +61,13 @@ async fn main() -> Result<()> {
     dotenv().ok();
 
     let config = PipeHubConfig::new()?;
-
     migrate(&config);
 
     let logger = Arc::new(ApplicationLogger::new(&config.log).await);
 
-    let manager = ConnectionManager::<PgConnection>::new(&config.database_url);
-    let pool: DbPool = Pool::new(manager)?;
-
+    let pool = Pool::new(&config.database_url).await?;
     let session_key: [u8; 32] = rand::random();
-    let github_client = Arc::new(client(&config));
+    let github_client = web::Data::new(client(&config));
     let https = config.https;
     let access_token_cache: Arc<AccessTokenCache> = Arc::new(DashMap::new());
     let http_client = http_client();
@@ -85,8 +79,8 @@ async fn main() -> Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .data(pool.clone())
-            .data(github_client.clone())
+            .app_data(pool.clone())
+            .app_data(github_client.clone())
             .data(logger.clone())
             .data(access_token_cache.clone())
             .data(http_client.clone())
@@ -146,19 +140,12 @@ fn session(key: &[u8], https: bool) -> CookieSession {
         .http_only(true)
 }
 
-fn client(config: &PipeHubConfig) -> BasicClient {
-    let github_client_id = ClientId::new(config.github.client_id.clone());
-    let github_client_secret = ClientSecret::new(config.github.client_secret.clone());
-    let auth_url = AuthUrl::new(config.github.auth_url());
-    let token_url = TokenUrl::new(config.github.token_url());
-
-    BasicClient::new(
-        github_client_id,
-        Some(github_client_secret),
-        auth_url,
-        Some(token_url),
+fn client(config: &PipeHubConfig) -> GitHubClient {
+    GitHubClient::new(
+        config.github.client_id.clone(),
+        config.github.client_secret.clone(),
+        &config.github.callback_url,
     )
-    .set_redirect_url(RedirectUrl::new(config.github.callback_url()))
 }
 
 fn request_id_injector<
