@@ -1,12 +1,16 @@
-name: Release
+name: Nightly
 
 on:
   push:
     branches:
       - master
 
+env:
+  IMAGE_NAME: pipehub
+  DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+
 jobs:
-  release:
+  nightly:
     runs-on: ubuntu-latest
 
     services:
@@ -27,16 +31,23 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Setup database
-        env:
-            DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
         run: |
           cargo install diesel_cli --no-default-features --features postgres
           diesel migration run --migration-dir ./server/migrations
+      
+      - name: Log into Github registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      
+      - name: Build image
+        run: docker build --network=host . --file Dockerfile --tag image
 
-      - uses: docker/build-push-action@v1
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}  
-          registry: docker.pkg.github.com
-          repository: ${{ github.repository }}/pipehub
-          tag_with_ref: true
+      - name: Push image to Github registry
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          [ "$VERSION" == "master" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag image $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION

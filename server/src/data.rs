@@ -149,34 +149,22 @@ impl Pool {
     }
 
     pub async fn upsert_wechat(&self, new_wechat: WechatWork) -> Result<()> {
-        if let None = sqlx::query_as!(
-            WechatWork,
-            "SELECT * FROM wechat_works WHERE tenant_id = $1",
-            new_wechat.tenant_id
-        )
-        .fetch_optional(self)
-        .await?
-        {
-            sqlx::query!(
-            "INSERT INTO wechat_works (tenant_id, corp_id, agent_id, secret) VALUES ($1, $2, $3, $4)",
+        sqlx::query!(
+            "INSERT INTO wechat_works (tenant_id, corp_id, agent_id, secret)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (tenant_id)
+                 DO UPDATE SET corp_id  = $2,
+                               agent_id = $3,
+                               secret   = $4
+            ",
             new_wechat.tenant_id,
             new_wechat.corp_id,
             new_wechat.agent_id,
             new_wechat.secret
-         )
-            .execute(self)
-            .await?;
-        } else {
-            sqlx::query!(
-                "UPDATE wechat_works SET corp_id = $1, agent_id = $2, secret = $3 WHERE tenant_id = $4",
-                new_wechat.corp_id,
-                new_wechat.agent_id,
-                new_wechat.secret,
-                new_wechat.tenant_id
-            )
-            .execute(self)
-            .await?;
-        }
+        )
+        .execute(self)
+        .await?;
+
         Ok(())
     }
 

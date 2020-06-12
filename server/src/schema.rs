@@ -18,7 +18,4 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(
-    tenants,
-    wechat_works,
-);
+allow_tables_to_appear_in_same_query!(tenants, wechat_works,);
