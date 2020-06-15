@@ -3,7 +3,7 @@
   "version": "0.2.8",
   "private": true,
   "dependencies": {
-    "@fluentui/react": "^7.119.0",
+    "@fluentui/react": "^7.120.0",
     "@microsoft/applicationinsights-web": "^2.5.5",
     "@testing-library/jest-dom": "^5.10.0",
     "@testing-library/react": "^10.2.1",
