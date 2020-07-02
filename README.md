@@ -8,6 +8,15 @@ It's a service that pipelines web request to your WeChat Account.
 
 Please visit https://www.pipehub.net/ and have a try.
 
+## Availability
+According to our statistics, the overall availability during 6/18 and 7/2 is **99.67%**.
+
+The percentiles of latencies are:
+- Avg: 338ms
+- p50: 192ms
+- p80: 386ms
+- p90: 875ms
+
 ## Use cases
 - Automate: [Automate](https://llamalab.com/automate/) on `Android` can redirect short messages, FCM notifications to PipeHub. Try `Notify me.flo` under `usecases` folder.
 
