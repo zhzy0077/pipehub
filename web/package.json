@@ -10,7 +10,7 @@
     "@testing-library/user-event": "^12.0.2",
     "@types/jest": "^26.0.5",
     "@types/node": "^14.0.19",
-    "@types/react": "^16.9.41",
+    "@types/react": "^16.9.44",
     "@types/react-dom": "^16.9.0",
     "@types/react-router-dom": "^5.1.5",
     "@uifabric/fluent-theme": "^7.1.110",
