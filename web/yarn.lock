@@ -1005,10 +1005,10 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@babel/runtime@^7.0.0", "@babel/runtime@^7.1.2", "@babel/runtime@^7.10.2", "@babel/runtime@^7.10.3", "@babel/runtime@^7.3.4", "@babel/runtime@^7.4.5", "@babel/runtime@^7.5.5", "@babel/runtime@^7.7.2", "@babel/runtime@^7.8.4", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
-  version "7.10.3"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.10.3.tgz#670d002655a7c366540c67f6fd3342cd09500364"
-  integrity sha512-RzGO0RLSdokm9Ipe/YD+7ww8X2Ro79qiXZF3HU9ljrM+qnJmH1Vqth+hbiQZy761LnMJTMitHDuKVYTk3k4dLw==
+"@babel/runtime@^7.0.0", "@babel/runtime@^7.1.2", "@babel/runtime@^7.10.2", "@babel/runtime@^7.10.3", "@babel/runtime@^7.12.5", "@babel/runtime@^7.3.4", "@babel/runtime@^7.4.5", "@babel/runtime@^7.5.5", "@babel/runtime@^7.7.2", "@babel/runtime@^7.8.4", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
+  version "7.13.8"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.13.8.tgz#cc886a85c072df1de23670dc1aa59fc116c4017c"
+  integrity sha512-CwQljpw6qSayc0fRG1soxHAKs1CnQMOChm4mlQP6My0kf9upVGizj/KhlTTgyUnETmHpcUXjaluNAkteRFuafg==
   dependencies:
     regenerator-runtime "^0.13.4"
 
@@ -1565,12 +1565,12 @@
     "@babel/runtime" "^7.10.3"
     "@testing-library/dom" "^7.17.1"
 
-"@testing-library/user-event@^12.0.2":
-  version "12.0.2"
-  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-12.0.2.tgz#66fa2c64a50b47726c008eacecb9a42b43cd9a2b"
-  integrity sha512-hJLv9saOJ7WJsRINPPTMmgEya85+L55FRRf1xgFO8HznaUO58YOf+cj+yf/POkhls9pVIPLRoGjzxgvmAsptYg==
+"@testing-library/user-event@^12.8.0":
+  version "12.8.0"
+  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-12.8.0.tgz#e07e52d4109a606772f72fa40641b284e8686221"
+  integrity sha512-5+k4U3X6XaFDSBSu6tsD02HVfzuOiPcygQmmYFE2aQQ0e5wRSxWRoU80UH1msa9Q6wuxa0BQsAmwAAAMydcscg==
   dependencies:
-    "@babel/runtime" "^7.10.2"
+    "@babel/runtime" "^7.12.5"
 
 "@types/babel__core@^7.1.0":
   version "7.1.6"
