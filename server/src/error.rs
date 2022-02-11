@@ -2,7 +2,6 @@ use actix_http::body::Body;
 use actix_http::http::StatusCode;
 use actix_http::{Response, ResponseError};
 use actix_web::HttpResponse;
-
 use std::fmt;
 use std::fmt::Display;
 

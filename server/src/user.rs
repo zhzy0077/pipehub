@@ -1,16 +1,16 @@
 use crate::data::Pool;
 use crate::github::GitHubClient;
 use crate::models::{Tenant, UserTenant};
+
 use actix_http::body::Body;
 use actix_session::Session;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, put, web, HttpResponse};
 use base58::ToBase58;
-use std::env;
-
 use rand::{thread_rng, Rng};
 use reqwest::Client;
 use serde::Deserialize;
+use std::env;
 
 pub const TENANT_ID_KEY: &str = "tenant_id";
 pub const STATE_KEY: &str = "state";

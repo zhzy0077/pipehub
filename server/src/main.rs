@@ -9,12 +9,10 @@ use crate::data::Pool;
 use crate::error::Result;
 use crate::github::GitHubClient;
 use crate::send::WeChatAccessToken;
+
 use actix_cors::Cors;
-
 use actix_session::CookieSession;
-
 use actix_web::middleware::{Compress, Logger};
-
 use actix_web::{web, App, HttpServer};
 use dashmap::DashMap;
 use diesel::{Connection, PgConnection};
@@ -22,11 +20,8 @@ use dotenv::dotenv;
 use log::LevelFilter;
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
-
-use std::io;
-
 use simplelog::{Config, TermLogger, TerminalMode};
-
+use std::io;
 use std::time::Duration;
 
 mod config;

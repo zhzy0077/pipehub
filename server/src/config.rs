@@ -1,6 +1,5 @@
 use crate::error::Result;
 use config::{Config, Environment};
-
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
