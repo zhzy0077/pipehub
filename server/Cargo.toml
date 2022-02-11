@@ -1,6 +1,6 @@
 [package]
 name = "server"
-version = "0.2.8"
+version = "0.3.0"
 authors = ["Zhiyuan Zheng <zhzy0077@hotmail.com>"]
 edition = "2018"
 repository = "https://github.com/zhzy0077/PipeHub"
