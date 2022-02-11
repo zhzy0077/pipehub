@@ -11,28 +11,28 @@ use crate::github::GitHubClient;
 use crate::send::WeChatAccessToken;
 use actix_cors::Cors;
 
-use actix_http::body::{Body, ResponseBody};
-use actix_http::http::Method;
+
+
 
 use actix_session::CookieSession;
-use actix_web::dev::{Service, ServiceRequest, ServiceResponse};
+
 use actix_web::middleware::{Compress, Logger};
 
-use actix_web::Error as AWError;
+
 use actix_web::{web, App, HttpServer};
 use dashmap::DashMap;
 use diesel::{Connection, PgConnection};
 use dotenv::dotenv;
-use log::{info, LevelFilter};
+use log::{LevelFilter};
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
-use std::future::Future;
+
 use std::io;
 
 use simplelog::{Config, TermLogger, TerminalMode};
-use std::sync::Arc;
+
 use std::time::Duration;
-use tokio::time;
+
 
 mod config;
 mod data;

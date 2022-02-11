@@ -1,12 +1,12 @@
-use crate::error::{Error, Result};
+use crate::error::{Result};
 use crate::models::{Tenant, WechatWork};
-use actix_http::Payload;
-use actix_web::{FromRequest, HttpRequest};
-use futures_util::future::{err, ok, Ready};
-use sqlx::pool::PoolOptions;
+
+
+
+
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{Execute, Executor, PgPool, Postgres};
-use std::future::Future;
+use sqlx::{Executor, PgPool};
+
 
 #[derive(Debug, Clone)]
 pub struct Pool {

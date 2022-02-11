@@ -7,7 +7,7 @@ use base58::FromBase58;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
-use std::sync::Arc;
+
 use std::time::Instant;
 
 #[derive(Debug, Deserialize)]
@@ -144,6 +144,10 @@ async fn get_token(client: &Client, wechat: &WechatWork) -> Result<WeChatAccessT
 
     let response = client.get(&url).send().await?;
     let token: WeChatAccessToken = response.json().await?;
+
+    if token.error_code != 0 {
+        return Err(Error::Dependency(token.error_message));
+    }
 
     Ok(token)
 }
