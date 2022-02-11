@@ -8,6 +8,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 
+use log::info;
 use std::time::Instant;
 
 #[derive(Debug, Deserialize)]

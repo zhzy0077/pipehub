@@ -11,19 +11,15 @@ use crate::github::GitHubClient;
 use crate::send::WeChatAccessToken;
 use actix_cors::Cors;
 
-
-
-
 use actix_session::CookieSession;
 
 use actix_web::middleware::{Compress, Logger};
-
 
 use actix_web::{web, App, HttpServer};
 use dashmap::DashMap;
 use diesel::{Connection, PgConnection};
 use dotenv::dotenv;
-use log::{LevelFilter};
+use log::LevelFilter;
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
 
@@ -32,7 +28,6 @@ use std::io;
 use simplelog::{Config, TermLogger, TerminalMode};
 
 use std::time::Duration;
-
 
 mod config;
 mod data;
@@ -51,7 +46,7 @@ embed_migrations!("./migrations");
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
-    TermLogger::init(LevelFilter::Debug, Config::default(), TerminalMode::Mixed).unwrap();
+    TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();
 
     dotenv().ok();
 
