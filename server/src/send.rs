@@ -114,6 +114,7 @@ pub async fn send(
         return Err(Error::User("Message blocked.").into());
     }
 
+    info!("{:?}", wechat);
     let wechat_future: BoxFuture<Result<()>> = if !wechat.corp_id.is_empty() {
         Box::pin(send_wechat(
             app_id,
@@ -163,6 +164,8 @@ async fn send_telegram(
         .await?;
 
     let response: TelegramSendResponse = response.json().await?;
+
+    info!("{:?}", response);
 
     if !response.ok {
         return Err(Error::Dependency(
