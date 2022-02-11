@@ -5,17 +5,8 @@ import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { HashRouter } from 'react-router-dom';
 import { initializeIcons } from '@fluentui/react';
-import { ApplicationInsights } from '@microsoft/applicationinsights-web'
 
 initializeIcons();
-
-const appInsights = new ApplicationInsights({
-  config: {
-    instrumentationKey: '2235f5d2-318d-4abe-afef-b8ba3c73b7de'
-  },
-});
-appInsights.loadAppInsights();
-appInsights.trackPageView();
 
 ReactDOM.render(
   // <React.StrictMode>

@@ -1,6 +1,5 @@
 use crate::data::Pool;
 use crate::error::{Error, Result};
-use crate::logger::ApplicationLogger;
 use crate::models::WechatWork;
 use crate::{AccessTokenCache, Response};
 use actix_web::{web, Error as AWError, HttpRequest, HttpResponse};
@@ -63,16 +62,9 @@ pub async fn send(
     key: web::Path<String>,
     payload: web::Bytes,
     web::Query(message): web::Query<Message>,
-    logger: web::Data<Arc<ApplicationLogger>>,
     access_token_cache: web::Data<Arc<AccessTokenCache>>,
     http_client: web::Data<Client>,
-    req: HttpRequest,
 ) -> std::result::Result<HttpResponse, AWError> {
-    let request_id: Uuid = req
-        .extensions()
-        .get::<Uuid>()
-        .cloned()
-        .expect("No request id found.");
     let app_key = key.into_inner().from_base58().map_err(Error::from)?;
     let app_id = i64::from_le_bytes((&app_key[0..8]).try_into().expect("Unexpected"));
 
@@ -109,7 +101,7 @@ pub async fn send(
 
     let mut token = access_token_cache.get(&app_id);
     if token.is_none() || token.as_ref().unwrap().expires_at.le(&Instant::now()) {
-        let new_token = get_token(&http_client, request_id, &logger, &wechat).await?;
+        let new_token = get_token(&http_client, &wechat).await?;
         access_token_cache.insert(app_id, new_token);
         token = access_token_cache.get(&app_id);
     }
@@ -118,8 +110,6 @@ pub async fn send(
     let mut retry_count = 0;
     while let Err(e) = do_send(
         &http_client,
-        request_id,
-        &logger,
         &wechat,
         token.value(),
         text.clone(),
@@ -132,23 +122,19 @@ pub async fn send(
         } else {
             retry_count += 1;
         }
-        let new_token = get_token(&http_client, request_id, &logger, &wechat).await?;
+        let new_token = get_token(&http_client, &wechat).await?;
         access_token_cache.insert(app_id, new_token);
         token = access_token_cache.get(&app_id).unwrap();
     }
 
     Ok(HttpResponse::Ok().json(Response {
-        request_id,
         success: true,
         error_message: "".to_owned(),
-        hint: format!("Retried {} times.", retry_count),
     }))
 }
 
 async fn get_token(
     client: &Client,
-    request_id: Uuid,
-    logger: &ApplicationLogger,
     wechat: &WechatWork,
 ) -> Result<WeChatAccessToken> {
     let corpid = &wechat.corp_id;
@@ -163,30 +149,16 @@ async fn get_token(
     let response = client.get(&url).send().await?;
     let token: WeChatAccessToken = response.json().await?;
 
-    logger.track_dependency(
-        request_id,
-        "GET https://qyapi.weixin.qq.com/cgi-bin/gettoken",
-        "HTTPS",
-        start.elapsed(),
-        "qyapi.weixin.qq.com",
-        &token.error_message,
-        &url,
-        token.error_code == 0,
-    );
-
     Ok(token)
 }
 
 async fn do_send(
     client: &Client,
-    request_id: Uuid,
-    logger: &ApplicationLogger,
     wechat: &WechatWork,
     token: &WeChatAccessToken,
     msg: String,
     to_party: Option<String>,
 ) -> Result<()> {
-    let start = Instant::now();
     let url = format!(
         "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={}",
         token.access_token
@@ -208,18 +180,7 @@ async fn do_send(
         .send()
         .await?;
 
-    let reply: WeChatSendResponse = response.json().await?;
-
-    logger.track_dependency(
-        request_id,
-        "POST https://qyapi.weixin.qq.com/cgi-bin/message/send",
-        "HTTPS",
-        start.elapsed(),
-        "qyapi.weixin.qq.com",
-        &reply.error_message,
-        &url,
-        reply.error_code == 0,
-    );
+    let _: WeChatSendResponse = response.json().await?;
 
     Ok(())
 }

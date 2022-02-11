@@ -8,11 +8,11 @@ pub struct PipeHubConfig {
     pub host: String,
     pub port: u16,
     pub domain: String,
+    pub domain_web: String,
     // If we need to make cookie secure.
     pub https: bool,
     pub database_url: String,
     pub github: GitHubConfig,
-    pub log: LogConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -22,15 +22,6 @@ pub struct GitHubConfig {
     pub auth_url: String,
     pub token_url: String,
     pub callback_url: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct LogConfig {
-    #[serde(default)]
-    pub instrumentation_key: String,
-    #[serde(default)]
-    pub log_dir: String,
-    pub level: Level,
 }
 
 impl PipeHubConfig {

@@ -6,6 +6,7 @@ use actix_session::Session;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, put, web, HttpResponse};
 use base58::ToBase58;
+use log::info;
 use rand::{thread_rng, Rng};
 use reqwest::Client;
 use serde::Deserialize;
@@ -27,10 +28,11 @@ pub async fn user(
 
     let state = new_csrf_token();
     let url = client.authorize_url(&state);
+    println!("Setting {}", state.clone());
     session.set(STATE_KEY, state)?;
     Ok(HttpResponse::Unauthorized()
         .header("Location", url.to_string())
-        .body(Body::Empty))
+        .body("hello world"))
 }
 
 fn new_csrf_token() -> String {
@@ -71,7 +73,7 @@ pub async fn login(
     }
     Ok(HttpResponse::Found()
         .header("Location", "/#/user")
-        .body(Body::Empty))
+        .body("hello world"))
 }
 
 #[get("/callback")]
@@ -82,12 +84,20 @@ pub async fn callback(
     pool: Pool,
     web::Query(callback): web::Query<Callback>,
 ) -> std::result::Result<HttpResponse, AWError> {
+    println!(
+        "{:?} - {:?}",
+        session.get::<String>(STATE_KEY),
+        callback.state
+    );
     match session.get::<String>(STATE_KEY)? {
         Some(state) if state == callback.state => {
             let access_token = github_client
                 .exchange_code(&http_client, &callback.code)
                 .await?;
+            println!("{:?}", access_token);
             let github_user = github_client.get_user(&http_client, &access_token).await?;
+
+            println!("{:?}", github_user);
 
             match pool.find_tenant_by_github_id(github_user.id).await? {
                 Some(tenant) => session.set(TENANT_ID_KEY, tenant.id)?,
@@ -99,11 +109,11 @@ pub async fn callback(
                 }
             }
             Ok(HttpResponse::Found()
-                .header("Location", "/#/user")
+                .header("Location", "http://localhost:3000/#/user")
                 .body(Body::Empty))
         }
         _ => Ok(HttpResponse::Found()
-            .header("Location", "/")
+            .header("Location", "http://localhost:3000/")
             .body(Body::Empty)),
     }
 }

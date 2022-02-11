@@ -5,12 +5,10 @@ extern crate diesel;
 extern crate diesel_migrations;
 #[macro_use]
 extern crate lazy_static;
-
 use crate::config::PipeHubConfig;
 use crate::data::Pool;
 use crate::error::{Error, Result};
 use crate::github::GitHubClient;
-use crate::logger::ApplicationLogger;
 use crate::send::WeChatAccessToken;
 use actix_cors::Cors;
 use actix_files::Files;
@@ -41,7 +39,6 @@ mod config;
 mod data;
 mod error;
 mod github;
-mod logger;
 mod models;
 mod schema;
 mod send;
@@ -50,8 +47,6 @@ mod util;
 mod wechat;
 
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
-const HINT: &str =
-    "If you believe it's unexpected, please help us by creating an issue with this response at https://github.com/zhzy0077/pipehub.";
 
 embed_migrations!("./migrations");
 
@@ -63,12 +58,11 @@ async fn main() -> Result<()> {
     let config = PipeHubConfig::new()?;
     migrate(&config);
 
-    let logger = Arc::new(ApplicationLogger::new(&config.log).await);
-
     let pool = Pool::new(&config.database_url).await?;
     let session_key: [u8; 32] = rand::random();
-    let github_client = web::Data::new(client(&config));
+    let github_client = web::Data::new(github_client(&config));
     let https = config.https;
+    let domain_web = config.domain_web.clone();
     let access_token_cache: Arc<AccessTokenCache> = Arc::new(DashMap::new());
     let http_client = http_client();
 
@@ -81,12 +75,18 @@ async fn main() -> Result<()> {
         App::new()
             .app_data(pool.clone())
             .app_data(github_client.clone())
-            .data(logger.clone())
             .data(access_token_cache.clone())
             .data(http_client.clone())
+            .wrap(
+                Cors::new()
+                    .allowed_origin(&domain_web)
+                    .allowed_methods(vec!["GET", "POST", "PUT"])
+                    .supports_credentials()
+                    .expose_headers(vec!["Location"])
+                    .max_age(3600)
+                    .finish(),
+            )
             .wrap_fn(head_request)
-            .wrap_fn(track_request)
-            .wrap_fn(request_id_injector)
             .wrap(session(&session_key[..], https))
             .wrap(Compress::default())
             .wrap(Logger::default())
@@ -108,7 +108,6 @@ async fn main() -> Result<()> {
                     .route(web::get().to(send::send))
                     .route(web::post().to(send::send)),
             )
-            .service(Files::new("/", "./static/").index_file("index.html"))
     })
     .bind(config.bind_addr())?
     .run()
@@ -119,10 +118,8 @@ async fn main() -> Result<()> {
 
 #[derive(Debug, Serialize)]
 pub struct Response {
-    request_id: Uuid,
     success: bool,
     error_message: String,
-    hint: String,
 }
 
 fn migrate(config: &PipeHubConfig) {
@@ -140,88 +137,12 @@ fn session(key: &[u8], https: bool) -> CookieSession {
         .http_only(true)
 }
 
-fn client(config: &PipeHubConfig) -> GitHubClient {
+fn github_client(config: &PipeHubConfig) -> GitHubClient {
     GitHubClient::new(
         config.github.client_id.clone(),
         config.github.client_secret.clone(),
         &config.github.callback_url,
     )
-}
-
-fn request_id_injector<
-    B: MessageBody,
-    S: Service<Response = ServiceResponse<B>, Request = ServiceRequest, Error = AWError>,
->(
-    req: ServiceRequest,
-    srv: &mut S,
-) -> impl Future<Output = std::result::Result<ServiceResponse<B>, AWError>> {
-    let request_id = Uuid::new_v4();
-    req.extensions_mut().insert(request_id);
-    srv.call(req)
-}
-
-fn track_request<
-    S: Service<Response = ServiceResponse<Body>, Request = ServiceRequest, Error = AWError>,
->(
-    req: ServiceRequest,
-    srv: &mut S,
-) -> impl Future<Output = std::result::Result<ServiceResponse<Body>, AWError>> {
-    let logger: Data<Arc<ApplicationLogger>> =
-        req.app_data().expect("No logger found in app_data().");
-    let request_id: Uuid = req
-        .extensions()
-        .get::<Uuid>()
-        .cloned()
-        .expect("No request id found.");
-    let method = req.method().to_string();
-    // Remove the query part from the log.
-    let uri = Uri::from_str(req.uri().path()).expect("Uri not found.");
-    let start = Instant::now();
-    let future = srv.call(req);
-    async move {
-        let mut res: std::result::Result<ServiceResponse<Body>, AWError> = future.await;
-        let duration = start.elapsed();
-        match res {
-            Ok(ref response)
-                if response.status() != StatusCode::BAD_REQUEST
-                    && !response.status().is_server_error() =>
-            {
-                logger.track_request(
-                    request_id,
-                    &method,
-                    uri,
-                    duration,
-                    response.status().as_str(),
-                );
-            }
-            Ok(ref response) => {
-                let error_message = response
-                    .response()
-                    .extensions()
-                    .get::<String>()
-                    .cloned()
-                    .unwrap_or_else(|| "Unexpected error occurred.".to_owned());
-                let status = response.status();
-                logger.track_trace(request_id, Level::Error, &error_message);
-                let status_str = response.status().to_string();
-
-                logger.track_request(request_id, &method, uri, duration, &status_str);
-                res = res.map(|res| {
-                    res.into_response(json(
-                        HttpResponse::new(status),
-                        &Response {
-                            request_id,
-                            success: !status.is_server_error(),
-                            error_message,
-                            hint: HINT.to_owned(),
-                        },
-                    ))
-                })
-            }
-            Err(_) => unimplemented!("Should not reach here."),
-        }
-        res
-    }
 }
 
 fn head_request<
@@ -245,22 +166,10 @@ fn head_request<
     }
 }
 
-fn json<T: Serialize>(mut resp: HttpResponse, value: &T) -> HttpResponse {
-    match serde_json::to_string(value) {
-        Ok(body) => {
-            resp.headers_mut()
-                .insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
-
-            resp.set_body(Body::from(body))
-        }
-        Err(e) => AWError::from(Error::from(e)).into(),
-    }
-}
-
 fn http_client() -> Client {
     ClientBuilder::new()
         .connect_timeout(Duration::from_secs(5))
-        .timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(10))
         .pool_idle_timeout(Duration::from_secs(60))
         .build()
         .expect("Failed to create reqwest client.")
