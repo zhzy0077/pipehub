@@ -5,6 +5,7 @@ use crate::{AccessTokenCache, Response};
 
 use actix_web::{web, Error as AWError, HttpResponse};
 use base58::FromBase58;
+use futures_util::future::{ok, BoxFuture};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -38,6 +39,12 @@ struct WeChatMessage {
 }
 
 #[derive(Debug, Serialize)]
+struct TelegramMessage {
+    chat_id: String,
+    text: String,
+}
+
+#[derive(Debug, Serialize)]
 struct WeChatMessageText {
     content: String,
 }
@@ -48,6 +55,12 @@ struct WeChatSendResponse {
     error_code: u64,
     #[serde(rename = "errmsg")]
     error_message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct TelegramSendResponse {
+    ok: bool,
+    description: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,11 +90,11 @@ pub async fn send(
         .ok_or(Error::User("No WeChat credentials configured."))?;
 
     let text = if let Message {
-        text: Some(text),
+        text: Some(ref text),
         to_party: _,
     } = message
     {
-        text
+        text.clone()
     } else if let Ok(text) = String::from_utf8(payload.to_vec()) {
         text
     } else {
@@ -98,9 +111,74 @@ pub async fn send(
         return Err(Error::User("Message blocked.").into());
     }
 
+    let wechat_future: BoxFuture<Result<()>> = if !wechat.corp_id.is_empty() {
+        Box::pin(send_wechat(
+            app_id,
+            access_token_cache,
+            &http_client,
+            &wechat,
+            &text,
+            &message,
+        ))
+    } else {
+        Box::pin(ok(()))
+    };
+
+    let telegram_future: BoxFuture<Result<()>> = if !wechat.bot_token.is_empty() {
+        Box::pin(send_telegram(&http_client, &wechat, &text))
+    } else {
+        Box::pin(ok(()))
+    };
+
+    let wechat_result: Result<()> = wechat_future.await;
+    let telegram_result: Result<()> = telegram_future.await;
+
+    Ok(HttpResponse::Ok().json(Response {
+        success: wechat_result.is_ok() || telegram_result.is_ok(),
+        error_message: "".to_owned(),
+    }))
+}
+
+async fn send_telegram(
+    http_client: &web::Data<Client>,
+    wechat: &WechatWork,
+    text: &str,
+) -> Result<()> {
+    let url = format!(
+        "https://api.telegram.org/bot{}/sendMessage",
+        wechat.bot_token
+    );
+    let response = http_client
+        .post(&url)
+        .json(&TelegramMessage {
+            chat_id: wechat.chat_id.clone(),
+            text: text.to_string(),
+        })
+        .send()
+        .await?;
+
+    let response: TelegramSendResponse = response.json().await?;
+
+    if !response.ok {
+        return Err(Error::Dependency(
+            response.description.unwrap_or("Unknown Error".to_string()),
+        ));
+    }
+
+    Ok(())
+}
+
+async fn send_wechat(
+    app_id: i64,
+    access_token_cache: web::Data<AccessTokenCache>,
+    http_client: &web::Data<Client>,
+    wechat: &WechatWork,
+    text: &str,
+    message: &Message,
+) -> Result<()> {
     let mut token = access_token_cache.get(&app_id);
     if token.is_none() || token.as_ref().unwrap().expires_at.le(&Instant::now()) {
-        let new_token = get_token(&http_client, &wechat).await?;
+        let new_token = get_token(&http_client, wechat).await?;
         access_token_cache.insert(app_id, new_token);
         token = access_token_cache.get(&app_id);
     }
@@ -109,9 +187,9 @@ pub async fn send(
     let mut retry_count = 0;
     while let Err(e) = do_send(
         &http_client,
-        &wechat,
+        wechat,
         token.value(),
-        text.clone(),
+        text.to_string(),
         message.to_party.clone(),
     )
     .await
@@ -125,11 +203,7 @@ pub async fn send(
         access_token_cache.insert(app_id, new_token);
         token = access_token_cache.get(&app_id).unwrap();
     }
-
-    Ok(HttpResponse::Ok().json(Response {
-        success: true,
-        error_message: "".to_owned(),
-    }))
+    Ok(())
 }
 
 async fn get_token(client: &Client, wechat: &WechatWork) -> Result<WeChatAccessToken> {

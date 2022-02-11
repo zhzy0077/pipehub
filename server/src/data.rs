@@ -84,18 +84,22 @@ impl Pool {
 
     pub async fn upsert_wechat(&self, new_wechat: WechatWork) -> Result<()> {
         sqlx::query(
-            "INSERT INTO wechat_works (tenant_id, corp_id, agent_id, secret)
-             VALUES ($1, $2, $3, $4)
+            "INSERT INTO wechat_works (tenant_id, corp_id, agent_id, secret, bot_token, chat_id)
+             VALUES ($1, $2, $3, $4, $5, $6)
              ON CONFLICT (tenant_id)
-                 DO UPDATE SET corp_id  = $2,
-                               agent_id = $3,
-                               secret   = $4
+                 DO UPDATE SET corp_id   = $2,
+                               agent_id  = $3,
+                               secret    = $4,
+                               bot_token = $5,
+                               chat_id   = $6
             ",
         )
         .bind(new_wechat.tenant_id)
         .bind(new_wechat.corp_id)
         .bind(new_wechat.agent_id)
         .bind(new_wechat.secret)
+        .bind(new_wechat.bot_token)
+        .bind(new_wechat.chat_id)
         .execute(&self.inner)
         .await?;
 

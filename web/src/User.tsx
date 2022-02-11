@@ -92,7 +92,7 @@ function User() {
   const onAgentIdChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
     setWechat({
       ...wechat,
-      agent_id: parseInt(newVal ?? '0'),
+      agent_id: parseInt(newVal || '0'),
     });
   }
   const onSecretChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
@@ -107,6 +107,21 @@ function User() {
       block_list: newVal || '',
     });
   }
+
+  const onBotTokenChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
+    setWechat({
+      ...wechat,
+      telegram_bot_token: newVal || '',
+    });
+  }
+
+  const onChatIdChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
+    setWechat({
+      ...wechat,
+      telegram_chat_id: newVal || '',
+    });
+  }
+
   return (
     <div>
       <Label>GitHub 账号</Label> <TextField readOnly value={user.github_login}></TextField>
@@ -115,6 +130,8 @@ function User() {
       <Label>企业 ID</Label> <TextField onChange={onCorpIdChange} value={wechat.corp_id}></TextField>
       <Label>Agent ID</Label> <TextField onChange={onAgentIdChange} value={wechat.agent_id ? wechat.agent_id.toString() : ""}></TextField>
       <Label>Secret</Label> <TextField onChange={onSecretChange} value={wechat.secret}></TextField>
+      <Label>Telegram Bot Token</Label> <TextField onChange={onBotTokenChange} value={wechat.telegram_bot_token}></TextField>
+      <Label>Telegram Chat Id</Label> <TextField onChange={onChatIdChange} value={wechat.telegram_chat_id}></TextField>
       <Label>黑名单(使用英语逗号,分隔的一系列字符串, 如果消息包含任意一个, 将不会推送.)</Label> <TextField onChange={onBlockListChange} value={user.block_list}></TextField>
       <PrimaryButton style={{ marginTop: '10px' }} onClick={update}>更新</PrimaryButton>
 
@@ -172,6 +189,8 @@ interface Wechat {
   corp_id: string,
   agent_id: number,
   secret: string,
+  telegram_bot_token: string,
+  telegram_chat_id: string,
 }
 
 export default User;
