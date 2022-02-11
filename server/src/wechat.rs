@@ -6,7 +6,10 @@ use actix_web::body::Body;
 use actix_web::{get, put, web, Error as AWError, HttpResponse};
 
 #[get("/wechat")]
-pub async fn wechat(session: Session, pool: Pool) -> std::result::Result<HttpResponse, AWError> {
+pub async fn wechat(
+    session: Session,
+    pool: web::Data<Pool>,
+) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         if let Some(wechat) = pool.find_wechat_by_id(tenant_id).await? {
             Ok(HttpResponse::Ok().json(wechat))
@@ -21,7 +24,7 @@ pub async fn wechat(session: Session, pool: Pool) -> std::result::Result<HttpRes
 #[put("/wechat")]
 pub async fn update(
     session: Session,
-    pool: Pool,
+    pool: web::Data<Pool>,
     web::Json(mut entity): web::Json<WechatWork>,
 ) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {

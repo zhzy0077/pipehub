@@ -6,6 +6,7 @@ use actix_session::Session;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, put, web, HttpResponse};
 use base58::ToBase58;
+use log::info;
 
 use rand::{thread_rng, Rng};
 use reqwest::Client;
@@ -18,7 +19,7 @@ pub const STATE_KEY: &str = "state";
 pub async fn user(
     session: Session,
     client: web::Data<GitHubClient>,
-    pool: Pool,
+    pool: web::Data<Pool>,
 ) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         if let Some(tenant) = pool.find_tenant_by_id(tenant_id).await? {
@@ -28,7 +29,7 @@ pub async fn user(
 
     let state = new_csrf_token();
     let url = client.authorize_url(&state);
-    println!("Setting {}", state.clone());
+    info!("Setting {}", state.clone());
     session.set(STATE_KEY, state)?;
     Ok(HttpResponse::Unauthorized()
         .header("Location", url.to_string())
@@ -57,7 +58,7 @@ pub async fn login(
     session: Session,
     http_client: web::Data<Client>,
     github_client: web::Data<GitHubClient>,
-    pool: Pool,
+    pool: web::Data<Pool>,
     web::Query(login): web::Query<LoginCallback>,
 ) -> std::result::Result<HttpResponse, AWError> {
     let access_token = login.access_token;
@@ -81,10 +82,10 @@ pub async fn callback(
     session: Session,
     github_client: web::Data<GitHubClient>,
     http_client: web::Data<Client>,
-    pool: Pool,
+    pool: web::Data<Pool>,
     web::Query(callback): web::Query<Callback>,
 ) -> std::result::Result<HttpResponse, AWError> {
-    println!(
+    info!(
         "{:?} - {:?}",
         session.get::<String>(STATE_KEY),
         callback.state
@@ -94,10 +95,10 @@ pub async fn callback(
             let access_token = github_client
                 .exchange_code(&http_client, &callback.code)
                 .await?;
-            println!("{:?}", access_token);
+            info!("{:?}", access_token);
             let github_user = github_client.get_user(&http_client, &access_token).await?;
 
-            println!("{:?}", github_user);
+            info!("{:?}", github_user);
 
             match pool.find_tenant_by_github_id(github_user.id).await? {
                 Some(tenant) => session.set(TENANT_ID_KEY, tenant.id)?,
@@ -119,7 +120,10 @@ pub async fn callback(
 }
 
 #[post("/user/reset_key")]
-pub async fn reset_key(session: Session, pool: Pool) -> std::result::Result<HttpResponse, AWError> {
+pub async fn reset_key(
+    session: Session,
+    pool: web::Data<Pool>,
+) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         if let Some(tenant) = pool.find_tenant_by_id(tenant_id).await? {
             let new_tenant = Tenant {
@@ -141,7 +145,7 @@ pub async fn reset_key(session: Session, pool: Pool) -> std::result::Result<Http
 #[put("/user")]
 pub async fn update(
     session: Session,
-    pool: Pool,
+    pool: web::Data<Pool>,
     web::Json(new_tenant): web::Json<Tenant>,
 ) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {

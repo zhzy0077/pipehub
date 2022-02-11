@@ -10,7 +10,6 @@ use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Instant;
 
-
 #[derive(Debug, Deserialize)]
 pub struct WeChatAccessToken {
     #[serde(rename = "errcode")]
@@ -58,11 +57,11 @@ pub struct Message {
 }
 
 pub async fn send(
-    pool: Pool,
+    pool: web::Data<Pool>,
     key: web::Path<String>,
     payload: web::Bytes,
     web::Query(message): web::Query<Message>,
-    access_token_cache: web::Data<Arc<AccessTokenCache>>,
+    access_token_cache: web::Data<AccessTokenCache>,
     http_client: web::Data<Client>,
 ) -> std::result::Result<HttpResponse, AWError> {
     let app_key = key.into_inner().from_base58().map_err(Error::from)?;
@@ -133,10 +132,7 @@ pub async fn send(
     }))
 }
 
-async fn get_token(
-    client: &Client,
-    wechat: &WechatWork,
-) -> Result<WeChatAccessToken> {
+async fn get_token(client: &Client, wechat: &WechatWork) -> Result<WeChatAccessToken> {
     let corpid = &wechat.corp_id;
     let secret = &wechat.secret;
 
