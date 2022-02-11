@@ -1,6 +1,7 @@
 use actix_http::body::Body;
 use actix_http::http::StatusCode;
 use actix_http::{Response, ResponseError};
+use actix_web::HttpResponse;
 use std::fmt;
 use std::fmt::Display;
 
@@ -32,9 +33,10 @@ impl ResponseError for Error {
     }
 
     fn error_response(&self) -> Response<Body> {
-        let mut resp = Response::new(self.status_code());
-        resp.extensions_mut().insert(self.to_string());
-        resp.set_body(Body::Empty)
+        HttpResponse::build(self.status_code()).json(crate::Response {
+            success: self.status_code().is_success(),
+            error_message: self.to_string(),
+        })
     }
 }
 
@@ -47,12 +49,6 @@ impl From<config::ConfigError> for Error {
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Error::Io(e)
-    }
-}
-
-impl From<r2d2::Error> for Error {
-    fn from(e: r2d2::Error) -> Self {
-        Error::DataAccess(e.to_string())
     }
 }
 
@@ -70,15 +66,6 @@ impl From<actix_http::Error> for Error {
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
         Error::Unexpected(format!("{:?}", e))
-    }
-}
-
-impl<E> From<actix_threadpool::BlockingError<E>> for Error
-where
-    E: fmt::Debug,
-{
-    fn from(e: actix_threadpool::BlockingError<E>) -> Self {
-        Error::Execution(format!("{:?}", e))
     }
 }
 

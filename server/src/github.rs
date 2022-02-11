@@ -25,7 +25,7 @@ impl GitHubClient {
         }
     }
 
-    pub fn authorize_url(&self, state: &String) -> Url {
+    pub fn authorize_url(&self, state: &str) -> Url {
         let mut url = AUTH_URL.clone();
         url.query_pairs_mut()
             .append_pair("client_id", &self.client_id)
@@ -72,8 +72,6 @@ pub struct GithubUser {
 #[derive(Debug, Deserialize)]
 struct GitHubAccessToken {
     access_token: String,
-    scope: String,
-    token_type: String,
 }
 
 // {"access_token":"e72e16c7e42f292c6912e7710c838347ae178b4a", "scope":"repo,gist", "token_type":"bearer"}

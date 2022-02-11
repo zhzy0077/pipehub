@@ -1,6 +1,7 @@
 use crate::data::Pool;
 use crate::github::GitHubClient;
 use crate::models::{Tenant, UserTenant};
+
 use actix_http::body::Body;
 use actix_session::Session;
 use actix_web::error::Error as AWError;
@@ -9,6 +10,7 @@ use base58::ToBase58;
 use rand::{thread_rng, Rng};
 use reqwest::Client;
 use serde::Deserialize;
+use std::env;
 
 pub const TENANT_ID_KEY: &str = "tenant_id";
 pub const STATE_KEY: &str = "state";
@@ -17,7 +19,7 @@ pub const STATE_KEY: &str = "state";
 pub async fn user(
     session: Session,
     client: web::Data<GitHubClient>,
-    pool: Pool,
+    pool: web::Data<Pool>,
 ) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         if let Some(tenant) = pool.find_tenant_by_id(tenant_id).await? {
@@ -55,7 +57,7 @@ pub async fn login(
     session: Session,
     http_client: web::Data<Client>,
     github_client: web::Data<GitHubClient>,
-    pool: Pool,
+    pool: web::Data<Pool>,
     web::Query(login): web::Query<LoginCallback>,
 ) -> std::result::Result<HttpResponse, AWError> {
     let access_token = login.access_token;
@@ -79,7 +81,7 @@ pub async fn callback(
     session: Session,
     github_client: web::Data<GitHubClient>,
     http_client: web::Data<Client>,
-    pool: Pool,
+    pool: web::Data<Pool>,
     web::Query(callback): web::Query<Callback>,
 ) -> std::result::Result<HttpResponse, AWError> {
     match session.get::<String>(STATE_KEY)? {
@@ -99,17 +101,26 @@ pub async fn callback(
                 }
             }
             Ok(HttpResponse::Found()
-                .header("Location", "/#/user")
+                .header(
+                    "Location",
+                    format!("{}/#/user", env::var("pipehub_domain_web").unwrap()),
+                )
                 .body(Body::Empty))
         }
         _ => Ok(HttpResponse::Found()
-            .header("Location", "/")
+            .header(
+                "Location",
+                format!("{}/", env::var("pipehub_domain_web").unwrap()),
+            )
             .body(Body::Empty)),
     }
 }
 
 #[post("/user/reset_key")]
-pub async fn reset_key(session: Session, pool: Pool) -> std::result::Result<HttpResponse, AWError> {
+pub async fn reset_key(
+    session: Session,
+    pool: web::Data<Pool>,
+) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         if let Some(tenant) = pool.find_tenant_by_id(tenant_id).await? {
             let new_tenant = Tenant {
@@ -131,7 +142,7 @@ pub async fn reset_key(session: Session, pool: Pool) -> std::result::Result<Http
 #[put("/user")]
 pub async fn update(
     session: Session,
-    pool: Pool,
+    pool: web::Data<Pool>,
     web::Json(new_tenant): web::Json<Tenant>,
 ) -> std::result::Result<HttpResponse, AWError> {
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {

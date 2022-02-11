@@ -1,8 +1,9 @@
 use base58::ToBase58;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use std::env;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, FromRow)]
 pub struct Tenant {
     #[serde(skip)]
     pub id: i64,
@@ -46,7 +47,7 @@ impl Tenant {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, FromRow)]
 pub struct WechatWork {
     #[serde(skip)]
     pub id: i64,

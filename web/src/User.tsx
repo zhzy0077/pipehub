@@ -3,13 +3,17 @@ import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callou
 import { useBoolean } from '@uifabric/react-hooks';
 import Send from './Send';
 
+const backend = "https://api.pipehub.net";
+
 function User() {
   const [user, setUser] = useState({} as User);
   const [wechat, setWechat] = useState({} as Wechat);
   const [isCalloutVisible, { toggle: toggleIsCalloutVisible }] = useBoolean(false);
 
   useEffect(() => {
-    fetch("/wechat")
+    fetch(`${backend}/wechat`, {
+      credentials: 'include'
+    })
       .then(res => {
         return res.json();
       }).then((wechat: Wechat) => {
@@ -18,7 +22,9 @@ function User() {
   }, []);
 
   useEffect(() => {
-    fetch("/user")
+    fetch(`${backend}/user`, {
+      credentials: 'include'
+    })
       .then(res => {
         if (res.status === 401) {
           window.location.href = res.headers.get("Location") ?? "/";
@@ -31,8 +37,9 @@ function User() {
   }, []);
 
   const update = () => {
-    fetch('/wechat', {
+    fetch(`${backend}/wechat`, {
       method: "PUT",
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -47,8 +54,9 @@ function User() {
         console.log(res);
       });
 
-    fetch('/user', {
+    fetch(`${backend}/user`, {
       method: "PUT",
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -62,8 +70,9 @@ function User() {
   };
   const resetKey = () => {
     toggleIsCalloutVisible();
-    fetch('/user/reset_key', {
+    fetch(`${backend}/user/reset_key`, {
       method: "POST",
+      credentials: 'include',
     })
       .then(res => {
         if (res.status < 400) {
