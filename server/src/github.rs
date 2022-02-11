@@ -25,7 +25,7 @@ impl GitHubClient {
         }
     }
 
-    pub fn authorize_url(&self, state: &String) -> Url {
+    pub fn authorize_url(&self, state: &str) -> Url {
         let mut url = AUTH_URL.clone();
         url.query_pairs_mut()
             .append_pair("client_id", &self.client_id)

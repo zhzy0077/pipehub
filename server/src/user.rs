@@ -6,7 +6,7 @@ use actix_session::Session;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, put, web, HttpResponse};
 use base58::ToBase58;
-use log::info;
+use std::env;
 
 use rand::{thread_rng, Rng};
 use reqwest::Client;
@@ -29,11 +29,10 @@ pub async fn user(
 
     let state = new_csrf_token();
     let url = client.authorize_url(&state);
-    info!("Setting {}", state.clone());
     session.set(STATE_KEY, state)?;
     Ok(HttpResponse::Unauthorized()
         .header("Location", url.to_string())
-        .body("hello world"))
+        .body(Body::Empty))
 }
 
 fn new_csrf_token() -> String {
@@ -74,7 +73,7 @@ pub async fn login(
     }
     Ok(HttpResponse::Found()
         .header("Location", "/#/user")
-        .body("hello world"))
+        .body(Body::Empty))
 }
 
 #[get("/callback")]
@@ -85,20 +84,12 @@ pub async fn callback(
     pool: web::Data<Pool>,
     web::Query(callback): web::Query<Callback>,
 ) -> std::result::Result<HttpResponse, AWError> {
-    info!(
-        "{:?} - {:?}",
-        session.get::<String>(STATE_KEY),
-        callback.state
-    );
     match session.get::<String>(STATE_KEY)? {
         Some(state) if state == callback.state => {
             let access_token = github_client
                 .exchange_code(&http_client, &callback.code)
                 .await?;
-            info!("{:?}", access_token);
             let github_user = github_client.get_user(&http_client, &access_token).await?;
-
-            info!("{:?}", github_user);
 
             match pool.find_tenant_by_github_id(github_user.id).await? {
                 Some(tenant) => session.set(TENANT_ID_KEY, tenant.id)?,
@@ -110,11 +101,17 @@ pub async fn callback(
                 }
             }
             Ok(HttpResponse::Found()
-                .header("Location", "http://localhost:3000/#/user")
+                .header(
+                    "Location",
+                    format!("{}/#/user", env::var("pipehub_domain_web").unwrap()),
+                )
                 .body(Body::Empty))
         }
         _ => Ok(HttpResponse::Found()
-            .header("Location", "http://localhost:3000/")
+            .header(
+                "Location",
+                format!("{}/", env::var("pipehub_domain_web").unwrap()),
+            )
             .body(Body::Empty)),
     }
 }
