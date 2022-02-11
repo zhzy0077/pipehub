@@ -158,7 +158,7 @@ async fn do_send(
     token: &WeChatAccessToken,
     msg: String,
     to_party: Option<String>,
-) -> Result<()> {
+) -> Result<WeChatSendResponse> {
     let url = format!(
         "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={}",
         token.access_token
@@ -180,7 +180,11 @@ async fn do_send(
         .send()
         .await?;
 
-    let _: WeChatSendResponse = response.json().await?;
+    let response: WeChatSendResponse = response.json().await?;
 
-    Ok(())
+    if response.error_code != 0 {
+        return Err(Error::Dependency(response.error_message));
+    }
+
+    Ok(response)
 }

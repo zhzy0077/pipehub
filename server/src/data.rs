@@ -1,12 +1,8 @@
-use crate::error::{Result};
+use crate::error::Result;
 use crate::models::{Tenant, WechatWork};
 
-
-
-
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{Executor, PgPool};
-
+use sqlx::PgPool;
 
 #[derive(Debug, Clone)]
 pub struct Pool {
