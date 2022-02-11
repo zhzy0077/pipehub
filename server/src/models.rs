@@ -47,7 +47,7 @@ impl Tenant {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, FromRow)]
+#[derive(Serialize, Deserialize, Default, FromRow, Debug)]
 pub struct WechatWork {
     #[serde(skip)]
     pub id: i64,
@@ -56,4 +56,8 @@ pub struct WechatWork {
     pub corp_id: String,
     pub agent_id: i64,
     pub secret: String,
+    #[serde(rename = "telegram_bot_token")]
+    pub bot_token: String,
+    #[serde(rename = "telegram_chat_id")]
+    pub chat_id: String,
 }
