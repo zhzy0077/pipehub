@@ -6,7 +6,7 @@ use actix_session::Session;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, put, web, HttpResponse};
 use base58::ToBase58;
-use log::info;
+
 use rand::{thread_rng, Rng};
 use reqwest::Client;
 use serde::Deserialize;

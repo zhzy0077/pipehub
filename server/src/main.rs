@@ -7,33 +7,33 @@ extern crate diesel_migrations;
 extern crate lazy_static;
 use crate::config::PipeHubConfig;
 use crate::data::Pool;
-use crate::error::{Error, Result};
+use crate::error::{Result};
 use crate::github::GitHubClient;
 use crate::send::WeChatAccessToken;
 use actix_cors::Cors;
-use actix_files::Files;
-use actix_http::body::{Body, MessageBody, ResponseBody};
-use actix_http::http::{header, Method, StatusCode, Uri};
-use actix_http::HttpMessage;
+
+use actix_http::body::{Body, ResponseBody};
+use actix_http::http::{Method};
+
 use actix_session::CookieSession;
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse};
 use actix_web::middleware::{Compress, Logger};
-use actix_web::web::Data;
+
 use actix_web::{web, App, HttpServer};
-use actix_web::{Error as AWError, HttpResponse};
+use actix_web::{Error as AWError};
 use dashmap::DashMap;
 use diesel::{Connection, PgConnection};
 use dotenv::dotenv;
-use log::{info, Level};
+use log::{info};
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
 use std::future::Future;
 use std::io;
-use std::str::FromStr;
+
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration};
 use tokio::time;
-use uuid::Uuid;
+
 
 mod config;
 mod data;

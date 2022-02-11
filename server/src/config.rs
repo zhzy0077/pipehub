@@ -1,6 +1,6 @@
 use crate::error::Result;
 use config::{Config, Environment};
-use log::Level;
+
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]

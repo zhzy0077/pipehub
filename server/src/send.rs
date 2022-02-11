@@ -2,14 +2,14 @@ use crate::data::Pool;
 use crate::error::{Error, Result};
 use crate::models::WechatWork;
 use crate::{AccessTokenCache, Response};
-use actix_web::{web, Error as AWError, HttpRequest, HttpResponse};
+use actix_web::{web, Error as AWError, HttpResponse};
 use base58::FromBase58;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::sync::Arc;
 use std::time::Instant;
-use uuid::Uuid;
+
 
 #[derive(Debug, Deserialize)]
 pub struct WeChatAccessToken {
@@ -140,7 +140,7 @@ async fn get_token(
     let corpid = &wechat.corp_id;
     let secret = &wechat.secret;
 
-    let start = Instant::now();
+    let _start = Instant::now();
     let url = format!(
         "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={}&corpsecret={}",
         corpid, secret
