@@ -3,7 +3,7 @@ import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callou
 import { useBoolean } from '@uifabric/react-hooks';
 import Send from './Send';
 
-const backend = "http://localhost:8080";
+const backend = "https://api.pipehub.net";
 
 function User() {
   const [user, setUser] = useState({} as User);
