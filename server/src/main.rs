@@ -41,7 +41,7 @@ embed_migrations!("./migrations");
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
-    TermLogger::init(LevelFilter::Debug, Config::default(), TerminalMode::Mixed).unwrap();
+    TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();
 
     dotenv().ok();
 
