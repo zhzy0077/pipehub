@@ -1,6 +1,7 @@
 use crate::error::Result;
 use config::{Config, Environment};
 use serde::Deserialize;
+use std::env;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct PipeHubConfig {
@@ -35,6 +36,7 @@ impl PipeHubConfig {
     }
 
     pub fn bind_addr(&self) -> String {
-        format!("{}:{}", self.host, self.port)
+        let port = env::var("PORT").unwrap_or(self.port.to_string());
+        format!("{}:{}", self.host, port)
     }
 }
