@@ -64,6 +64,7 @@ async fn main() -> Result<()> {
             .app_data(http_client.clone())
             .wrap(
                 Cors::default()
+                    .allow_any_origin()
                     .allowed_methods(vec!["GET", "POST", "PUT"])
                     .allow_any_header()
                     .supports_credentials()
