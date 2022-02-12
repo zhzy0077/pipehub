@@ -49,7 +49,6 @@ async fn main() -> Result<()> {
     migrate(&config);
 
     let https = config.https;
-    let domain_web = config.domain_web.clone();
     let session_key: [u8; 32] = rand::random();
 
     let pool = web::Data::new(Pool::new(&config.database_url).await?);
@@ -65,7 +64,6 @@ async fn main() -> Result<()> {
             .app_data(http_client.clone())
             .wrap(
                 Cors::default()
-                    .allowed_origin(&domain_web)
                     .allowed_methods(vec!["GET", "POST", "PUT"])
                     .allow_any_header()
                     .supports_credentials()
