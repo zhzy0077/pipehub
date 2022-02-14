@@ -6,6 +6,7 @@ use crate::{AccessTokenCache, RequestId, Response};
 use actix_web::{web, Error as AWError, HttpResponse};
 use base58::FromBase58;
 use futures_util::future::{ok, BoxFuture};
+use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
