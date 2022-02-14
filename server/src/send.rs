@@ -1,11 +1,12 @@
 use crate::data::Pool;
 use crate::error::{Error, Result};
 use crate::models::WechatWork;
-use crate::{AccessTokenCache, Response};
+use crate::{AccessTokenCache, RequestId, Response};
 
 use actix_web::{web, Error as AWError, HttpResponse};
 use base58::FromBase58;
 use futures_util::future::{ok, BoxFuture};
+use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -76,8 +77,10 @@ pub async fn send(
     web::Query(message): web::Query<Message>,
     access_token_cache: web::Data<AccessTokenCache>,
     http_client: web::Data<Client>,
+    request_id: RequestId,
 ) -> std::result::Result<HttpResponse, AWError> {
-    let app_key = key.into_inner().from_base58().map_err(Error::from)?;
+    let key = key.into_inner();
+    let app_key = key.clone().from_base58().map_err(Error::from)?;
     let app_id = i64::from_le_bytes((&app_key[0..8]).try_into().expect("Unexpected"));
 
     let tenant = pool
@@ -125,8 +128,10 @@ pub async fn send(
     };
 
     let telegram_future: BoxFuture<Result<()>> = if !wechat.bot_token.is_empty() {
+        info!("{} [Send] [WeChat] {}", request_id, key);
         Box::pin(send_telegram(&http_client, &wechat, &text))
     } else {
+        info!("{} [Send] [Telegram] {}", request_id, key);
         Box::pin(ok(()))
     };
 

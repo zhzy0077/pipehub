@@ -1,8 +1,10 @@
 use crate::error::Result;
 use crate::models::{Tenant, WechatWork};
+use log::LevelFilter;
+use std::time::Duration;
 
-use sqlx::postgres::PgPoolOptions;
-use sqlx::PgPool;
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use sqlx::{ConnectOptions, PgPool};
 
 #[derive(Debug, Clone)]
 pub struct Pool {
@@ -13,9 +15,14 @@ impl Pool {
     pub async fn new(conn_str: &str) -> Result<Pool> {
         let num_cpus = num_cpus::get() as u32;
 
+        let mut connect_options = conn_str.parse::<PgConnectOptions>()?;
+
+        connect_options.log_statements(LevelFilter::Debug);
+        connect_options.log_slow_statements(LevelFilter::Info, Duration::from_secs(1));
+
         let inner = PgPoolOptions::new()
             .max_connections(num_cpus)
-            .connect(conn_str)
+            .connect_with(connect_options)
             .await?;
 
         Ok(Pool { inner })

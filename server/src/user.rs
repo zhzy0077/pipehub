@@ -2,11 +2,13 @@ use crate::data::Pool;
 use crate::github::GitHubClient;
 use crate::models::{Tenant, UserTenant};
 
+use crate::RequestId;
 use actix_http::body::Body;
 use actix_session::Session;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, put, web, HttpResponse};
 use base58::ToBase58;
+use log::info;
 use rand::{thread_rng, Rng};
 use reqwest::Client;
 use serde::Deserialize;
@@ -20,9 +22,12 @@ pub async fn user(
     session: Session,
     client: web::Data<GitHubClient>,
     pool: web::Data<Pool>,
+    request_id: RequestId,
 ) -> std::result::Result<HttpResponse, AWError> {
+    info!("{} [Get User]", request_id);
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         if let Some(tenant) = pool.find_tenant_by_id(tenant_id).await? {
+            info!("{} [Get User] {}", request_id, tenant.id);
             return Ok(HttpResponse::Ok().json(UserTenant::from(tenant)));
         };
     }
@@ -83,6 +88,7 @@ pub async fn callback(
     http_client: web::Data<Client>,
     pool: web::Data<Pool>,
     web::Query(callback): web::Query<Callback>,
+    request_id: RequestId,
 ) -> std::result::Result<HttpResponse, AWError> {
     match session.get::<String>(STATE_KEY)? {
         Some(state) if state == callback.state => {
@@ -92,9 +98,13 @@ pub async fn callback(
             let github_user = github_client.get_user(&http_client, &access_token).await?;
 
             match pool.find_tenant_by_github_id(github_user.id).await? {
-                Some(tenant) => session.set(TENANT_ID_KEY, tenant.id)?,
+                Some(tenant) => {
+                    info!("{} [Login] {}", request_id, github_user.login);
+                    session.set(TENANT_ID_KEY, tenant.id)?
+                }
                 None => {
                     let app_id: i64 = thread_rng().gen();
+                    info!("{} [Register] {}", request_id, github_user.login);
                     let tenant = Tenant::new(app_id, github_user.login, github_user.id);
                     let tenant = pool.insert_tenant(tenant).await?;
                     session.set(TENANT_ID_KEY, tenant.id)?
@@ -144,9 +154,12 @@ pub async fn update(
     session: Session,
     pool: web::Data<Pool>,
     web::Json(new_tenant): web::Json<Tenant>,
+    request_id: RequestId,
 ) -> std::result::Result<HttpResponse, AWError> {
+    info!("{} [Update User]", request_id);
     if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
         if let Some(tenant) = pool.find_tenant_by_id(tenant_id).await? {
+            info!("{} [Update User] {}", request_id, tenant.id);
             let new_tenant = Tenant {
                 id: tenant.id,
                 app_id: tenant.app_id,
