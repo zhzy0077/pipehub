@@ -8,19 +8,19 @@ use crate::config::PipeHubConfig;
 use crate::data::Pool;
 use crate::error::Result;
 use crate::github::GitHubClient;
+use crate::request_id::{RequestId, RequestIdAware};
 use crate::send::WeChatAccessToken;
 
 use actix_cors::Cors;
+use actix_http::HttpMessage;
 use actix_session::CookieSession;
 use actix_web::middleware::{Compress, Logger};
 use actix_web::{web, App, HttpServer};
 use dashmap::DashMap;
 use diesel::{Connection, PgConnection};
 use dotenv::dotenv;
-use log::LevelFilter;
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
-use simplelog::{Config, TermLogger, TerminalMode};
 use std::io;
 use std::time::Duration;
 
@@ -29,6 +29,7 @@ mod data;
 mod error;
 mod github;
 mod models;
+mod request_id;
 mod schema;
 mod send;
 mod user;
@@ -41,9 +42,8 @@ embed_migrations!("./migrations");
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
-    TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();
-
     dotenv().ok();
+    env_logger::init();
 
     let config = PipeHubConfig::new()?;
     migrate(&config);
@@ -57,22 +57,28 @@ async fn main() -> Result<()> {
     let http_client = web::Data::new(http_client());
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET", "POST", "PUT"])
+            .allow_any_header()
+            .supports_credentials()
+            .expose_headers(vec!["Location"]);
+
+        let logger = Logger::new(r#"%t %{request_id}xi "%r" %s %b %T"#)
+            .custom_request_replace("request_id", |req| {
+                req.extensions().get::<RequestId>().unwrap().to_string()
+            });
+
         App::new()
             .app_data(pool.clone())
             .app_data(github_client.clone())
             .app_data(access_token_cache.clone())
             .app_data(http_client.clone())
-            .wrap(
-                Cors::default()
-                    .allow_any_origin()
-                    .allowed_methods(vec!["GET", "POST", "PUT"])
-                    .allow_any_header()
-                    .supports_credentials()
-                    .expose_headers(vec!["Location"]),
-            )
+            .wrap(cors)
             .wrap(session(&session_key[..], https))
             .wrap(Compress::default())
-            .wrap(Logger::default())
+            .wrap(logger)
+            .wrap(RequestIdAware)
             .service(user::reset_key)
             .service(user::user)
             .service(user::update)
