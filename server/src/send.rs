@@ -3,6 +3,7 @@ use crate::error::{Error, Result};
 use crate::models::WechatWork;
 use crate::{AccessTokenCache, RequestId, Response};
 
+use crate::captcha;
 use actix_web::{web, Error as AWError, HttpResponse};
 use base58::FromBase58;
 use futures_util::future::{ok, BoxFuture};
@@ -94,7 +95,7 @@ pub async fn send(
             "No WeChat/Telegram credentials are configured.",
         ))?;
 
-    let text = if let Message {
+    let mut text = if let Message {
         text: Some(ref text),
         to_party: _,
     } = message
@@ -114,6 +115,10 @@ pub async fn send(
         .any(|block_word| text.contains(block_word))
     {
         return Err(Error::User("Message blocked.").into());
+    }
+
+    if tenant.captcha {
+        text = captcha::captcha(text);
     }
 
     let wechat_future: BoxFuture<Result<()>> = if !wechat.corp_id.is_empty() {

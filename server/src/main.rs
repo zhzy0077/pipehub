@@ -18,6 +18,7 @@ use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
 use std::time::Duration;
 
+mod captcha;
 mod config;
 mod data;
 mod error;

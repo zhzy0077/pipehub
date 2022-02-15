@@ -12,6 +12,7 @@ pub struct Tenant {
     pub github_login: String,
     pub github_id: i64,
     pub block_list: String,
+    pub captcha: bool,
 }
 
 #[derive(Serialize)]
@@ -43,6 +44,7 @@ impl Tenant {
             github_login,
             github_id,
             block_list: "".to_string(),
+            captcha: false,
         }
     }
 }
