@@ -28,6 +28,10 @@ impl Pool {
         Ok(Pool { inner })
     }
 
+    pub async fn migrate(&self) -> Result<()> {
+        return Ok(sqlx::migrate!("./migrations").run(&self.inner).await?);
+    }
+
     pub async fn find_tenant_by_id(&self, tenant_id: i64) -> Result<Option<Tenant>> {
         let tenant = sqlx::query_as::<_, Tenant>("SELECT * FROM tenants WHERE id = $1")
             .bind(tenant_id)

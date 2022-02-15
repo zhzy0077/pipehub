@@ -90,7 +90,9 @@ pub async fn send(
     let wechat = pool
         .find_wechat_by_app_id(app_id)
         .await?
-        .ok_or(Error::User("No WeChat credentials configured."))?;
+        .ok_or(Error::User(
+            "No WeChat/Telegram credentials are configured.",
+        ))?;
 
     let text = if let Message {
         text: Some(ref text),

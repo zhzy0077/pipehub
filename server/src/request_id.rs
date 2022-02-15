@@ -1,10 +1,9 @@
 use crate::error::Error;
-use actix_http::http::HeaderValue;
+use actix_http::http::{HeaderName, HeaderValue};
 use actix_http::{HttpMessage, Payload};
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{Error as AWError, FromRequest, HttpRequest};
 use futures_util::future::{ok, ready, Ready};
-use reqwest::header::HeaderName;
 use std::fmt::{Display, Formatter};
 use std::future::Future;
 use std::pin::Pin;
