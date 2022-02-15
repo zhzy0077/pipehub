@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack } from '@fluentui/react';
+import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack, Checkbox } from '@fluentui/react';
 import { useBoolean } from '@uifabric/react-hooks';
 import Send from './Send';
 
@@ -108,6 +108,12 @@ function User() {
     });
   }
 
+  const onCaptchaChange = (event: React.FormEvent<HTMLInputElement | HTMLElement> | undefined, newVal?: boolean) => {
+    setUser({
+      ...user,
+      captcha: newVal || false,
+    });
+  }
   const onBotTokenChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
     setWechat({
       ...wechat,
@@ -133,6 +139,7 @@ function User() {
       <Label>Telegram Bot Token</Label> <TextField onChange={onBotTokenChange} value={wechat.telegram_bot_token}></TextField>
       <Label>Telegram Chat Id</Label> <TextField onChange={onChatIdChange} value={wechat.telegram_chat_id}></TextField>
       <Label>黑名单(使用英语逗号,分隔的一系列字符串, 如果消息包含任意一个, 将不会推送.)</Label> <TextField onChange={onBlockListChange} value={user.block_list}></TextField>
+      <Checkbox styles={{ root: { marginTop: '10px' } }} label='验证码检测(讲较长的短信中的验证码提取在第一行显示)(Beta)' onChange={onCaptchaChange} checked={user.captcha} />
       <PrimaryButton style={{ marginTop: '10px' }} onClick={update}>更新</PrimaryButton>
 
       <DefaultButton
@@ -183,6 +190,7 @@ interface User {
   app_key: string,
   callback_url: string,
   block_list: string,
+  captcha: boolean,
 }
 
 interface Wechat {

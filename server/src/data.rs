@@ -69,9 +69,10 @@ impl Pool {
     }
 
     pub async fn update_tenant(&self, tenant: Tenant) -> Result<()> {
-        sqlx::query("UPDATE tenants SET app_id = $1, block_list = $2 WHERE id = $3")
+        sqlx::query("UPDATE tenants SET app_id = $1, block_list = $2, captcha = $3 WHERE id = $4")
             .bind(tenant.app_id)
             .bind(tenant.block_list)
+            .bind(tenant.captcha)
             .bind(tenant.id)
             .execute(&self.inner)
             .await?;
@@ -114,8 +115,13 @@ impl Pool {
     }
 
     pub async fn find_wechat_by_app_id(&self, app_id: i64) -> Result<Option<WechatWork>> {
-        let wechat_work = sqlx::query_as::<_, WechatWork>("SELECT wechat_works.* FROM wechat_works LEFT JOIN tenants ON wechat_works.tenant_id = tenants.id WHERE app_id = $1")
-            .bind(app_id)
+        let wechat_work = sqlx::query_as::<_, WechatWork>(
+            "SELECT wechat_works.*
+            FROM wechat_works
+            LEFT JOIN tenants ON wechat_works.tenant_id = tenants.id
+            WHERE app_id = $1",
+        )
+        .bind(app_id)
         .fetch_optional(&self.inner)
         .await?;
 
