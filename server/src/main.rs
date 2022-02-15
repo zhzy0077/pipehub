@@ -24,6 +24,7 @@ use serde::Serialize;
 use std::io;
 use std::time::Duration;
 
+mod captcha;
 mod config;
 mod data;
 mod error;

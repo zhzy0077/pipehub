@@ -5,6 +5,7 @@ table! {
         github_login -> Varchar,
         github_id -> Int8,
         block_list -> Text,
+        captcha -> Bool,
     }
 }
 

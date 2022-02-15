@@ -139,6 +139,7 @@ pub async fn reset_key(
                 github_login: tenant.github_login,
                 github_id: tenant.github_id,
                 block_list: tenant.block_list,
+                captcha: tenant.captcha,
             };
             pool.update_tenant(new_tenant.clone()).await?;
 
@@ -166,6 +167,7 @@ pub async fn update(
                 github_login: tenant.github_login,
                 github_id: tenant.github_id,
                 block_list: new_tenant.block_list,
+                captcha: new_tenant.captcha,
             };
             pool.update_tenant(new_tenant.clone()).await?;
 
