@@ -10,8 +10,8 @@ pub fn captcha(content: String) -> String {
 
     if let Some(captures) = re.captures(&content) {
         return format!(
-            "{}: {}\n{}",
-            &captures["Sender"], &captures["Number"], content
+            "{} - {}\n{}",
+            &captures["Number"], &captures["Sender"], content
         );
     }
     content
