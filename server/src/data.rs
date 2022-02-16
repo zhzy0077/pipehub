@@ -21,7 +21,8 @@ impl Pool {
         connect_options.log_slow_statements(LevelFilter::Info, Duration::from_secs(1));
 
         let inner = PgPoolOptions::new()
-            .max_connections(num_cpus)
+            .min_connections(num_cpus)
+            .max_connections(num_cpus * 4)
             .connect_with(connect_options)
             .await?;
 

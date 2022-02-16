@@ -118,6 +118,7 @@ fn http_client() -> Client {
         .connect_timeout(Duration::from_secs(5))
         .timeout(Duration::from_secs(10))
         .pool_idle_timeout(Duration::from_secs(60))
+        .pool_max_idle_per_host(8)
         .build()
         .expect("Failed to create reqwest client.")
 }
