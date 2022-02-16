@@ -1,22 +1,18 @@
 import React from 'react';
 import {
-    Switch,
     Route,
+    Routes
 } from "react-router-dom";
 import Home from './Home';
 import User from './User';
 
-function Routes() {
+function AppRoute() {
     return (
-        <Switch>
-            <Route path="/user">
-                <User />
-            </Route>
-            <Route path="/">
-                <Home />
-            </Route>
-        </Switch>
+        <Routes>
+            <Route path="/user" element={<User />} />
+            <Route path="/" element={<Home />} />
+        </Routes>
     );
 }
 
-export default Routes;
+export default AppRoute;

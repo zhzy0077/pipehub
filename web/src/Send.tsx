@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Stack, Label, TextField, PrimaryButton } from '@fluentui/react';
-import User from './User';
+import { UserEntity } from './User';
 
 interface SendProps {
-    user: User,
+    user: UserEntity,
 }
 
 function Send(props: SendProps) {
@@ -26,7 +26,7 @@ function Send(props: SendProps) {
     }
 
     return (
-        <Stack gap={15}>
+        <Stack tokens={{ childrenGap: '15px' }}>
             <Stack.Item>
                 <Label>Payload</Label>
             </Stack.Item>
