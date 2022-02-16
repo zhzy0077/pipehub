@@ -1,6 +1,5 @@
 import React from 'react';
-import { Depths } from '@uifabric/fluent-theme/lib/fluent/FluentDepths';
-import { Stack, Label, FontSizes, Text, Link } from '@fluentui/react';
+import { Stack, Label, FontSizes, Text, Link, Depths } from '@fluentui/react';
 
 function Faq() {
   return (

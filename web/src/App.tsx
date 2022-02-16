@@ -1,5 +1,5 @@
 import React from 'react';
-import Routes from './Routes';
+import AppRoute from './Routes';
 import Navs from './Navs';
 import { Stack, Separator } from '@fluentui/react';
 
@@ -8,7 +8,7 @@ function App() {
     <Stack>
       <Navs />
       <Separator />
-      <Routes />
+      <AppRoute />
     </Stack>
   );
 }

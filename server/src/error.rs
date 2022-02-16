@@ -2,12 +2,14 @@ use actix_http::body::Body;
 use actix_http::http::StatusCode;
 use actix_http::{Response, ResponseError};
 use actix_web::HttpResponse;
+use sqlx::migrate::MigrateError;
 use std::fmt;
 use std::fmt::Display;
 
 #[derive(Debug)]
 pub enum Error {
     Initialization(config::ConfigError),
+    Migrate(MigrateError),
     DataAccess(String),
     Execution(String),
     Io(std::io::Error),
@@ -52,12 +54,6 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl From<diesel::result::Error> for Error {
-    fn from(e: diesel::result::Error) -> Self {
-        Error::DataAccess(e.to_string())
-    }
-}
-
 impl From<actix_http::Error> for Error {
     fn from(e: actix_http::Error) -> Self {
         Error::Execution(format!("{:?}", e))
@@ -90,5 +86,11 @@ impl std::convert::From<reqwest::Error> for Error {
 impl From<sqlx::Error> for Error {
     fn from(e: sqlx::Error) -> Self {
         Error::DataAccess(e.to_string())
+    }
+}
+
+impl From<MigrateError> for Error {
+    fn from(e: MigrateError) -> Self {
+        Error::Migrate(e)
     }
 }

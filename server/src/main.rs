@@ -1,8 +1,4 @@
 #[macro_use]
-extern crate diesel;
-#[macro_use]
-extern crate diesel_migrations;
-#[macro_use]
 extern crate lazy_static;
 use crate::config::PipeHubConfig;
 use crate::data::Pool;
@@ -14,14 +10,12 @@ use crate::send::WeChatAccessToken;
 use actix_cors::Cors;
 use actix_http::HttpMessage;
 use actix_session::CookieSession;
-use actix_web::middleware::{Compress, Logger};
+use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use dashmap::DashMap;
-use diesel::{Connection, PgConnection};
 use dotenv::dotenv;
 use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
-use std::io;
 use std::time::Duration;
 
 mod captcha;
@@ -31,7 +25,6 @@ mod error;
 mod github;
 mod models;
 mod request_id;
-mod schema;
 mod send;
 mod user;
 mod util;
@@ -39,20 +32,20 @@ mod wechat;
 
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
 
-embed_migrations!("./migrations");
-
 #[actix_rt::main]
 async fn main() -> Result<()> {
     dotenv().ok();
     env_logger::init();
 
     let config = PipeHubConfig::new()?;
-    migrate(&config);
 
     let https = config.https;
     let session_key: [u8; 32] = rand::random();
 
-    let pool = web::Data::new(Pool::new(&config.database_url).await?);
+    let pool = Pool::new(&config.database_url).await?;
+    pool.migrate().await?;
+
+    let pool = web::Data::new(pool);
     let github_client = web::Data::new(github_client(&config));
     let access_token_cache: web::Data<AccessTokenCache> = web::Data::new(DashMap::new());
     let http_client = web::Data::new(http_client());
@@ -77,7 +70,6 @@ async fn main() -> Result<()> {
             .app_data(http_client.clone())
             .wrap(cors)
             .wrap(session(&session_key[..], https))
-            .wrap(Compress::default())
             .wrap(logger)
             .wrap(RequestIdAware)
             .service(user::reset_key)
@@ -104,14 +96,6 @@ async fn main() -> Result<()> {
 pub struct Response {
     success: bool,
     error_message: String,
-}
-
-fn migrate(config: &PipeHubConfig) {
-    let connection =
-        PgConnection::establish(&config.database_url).expect("Unable to connect to DB.");
-
-    embedded_migrations::run_with_output(&connection, &mut io::stdout())
-        .expect("Unable to migrate.");
 }
 
 fn session(key: &[u8], https: bool) -> CookieSession {

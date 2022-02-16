@@ -6,9 +6,7 @@ lazy_static! {
 }
 
 pub fn captcha(content: String) -> String {
-    let re: Regex = Regex::new(r"^【(?P<Sender>.+)】.*?(?P<Number>\d{4,8})").unwrap();
-
-    if let Some(captures) = re.captures(&content) {
+    if let Some(captures) = RE.captures(&content) {
         return format!(
             "{} - {}\n{}",
             &captures["Number"], &captures["Sender"], content

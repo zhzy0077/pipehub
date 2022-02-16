@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack, Checkbox } from '@fluentui/react';
-import { useBoolean } from '@uifabric/react-hooks';
+import { useBoolean } from '@fluentui/react-hooks';
 import Send from './Send';
 
-const backend = process.env.BACKEND_URL ?? "https://api.pipehub.net";
+const backend = process.env.BACKEND_URL ?? "http://localhost:8080";
 
 function User() {
-  const [user, setUser] = useState({} as User);
+  const [user, setUser] = useState({} as UserEntity);
   const [wechat, setWechat] = useState({} as Wechat);
   const [isCalloutVisible, { toggle: toggleIsCalloutVisible }] = useBoolean(false);
 
@@ -31,7 +31,7 @@ function User() {
         } else {
           return res.json();
         }
-      }).then((entity: User) => {
+      }).then((entity: UserEntity) => {
         setUser(entity);
       })
   }, []);
@@ -79,7 +79,7 @@ function User() {
           alert("Success");
         }
         return res.json();
-      }).then((entity: User) => {
+      }).then((entity: UserEntity) => {
         setUser(entity);
       });
   }
@@ -161,7 +161,7 @@ function User() {
                 重置 App Key 后目前用来发送的 URL 会发生变化, 所有调用方都需要使用新的 URL. 确定要重置吗?
               </Label>
 
-              <Stack style={{ marginTop: '20px' }} gap={8} horizontal horizontalAlign="space-evenly">
+              <Stack style={{ marginTop: '20px' }} tokens={{ childrenGap: '8px' }} horizontal horizontalAlign="space-evenly">
                 <PrimaryButton
                   onClick={resetKey}
                   text="确定"
@@ -184,7 +184,7 @@ function User() {
   );
 }
 
-interface User {
+export interface UserEntity {
   github_login: string,
   github_id: number,
   app_key: string,
@@ -193,7 +193,7 @@ interface User {
   captcha: boolean,
 }
 
-interface Wechat {
+export interface Wechat {
   corp_id: string,
   agent_id: number,
   secret: string,
