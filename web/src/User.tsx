@@ -130,16 +130,16 @@ function User() {
 
   return (
     <div>
-      <Label>GitHub 账号</Label> <TextField readOnly value={user.github_login}></TextField>
-      <Label>App Key</Label> <TextField readOnly value={user.app_key}></TextField>
+      <Label>GitHub 账号</Label> <TextField readOnly value={user.github_login ?? ''}></TextField>
+      <Label>App Key</Label> <TextField readOnly value={user.app_key ?? ''}></TextField>
 
-      <Label>企业 ID</Label> <TextField onChange={onCorpIdChange} value={wechat.corp_id}></TextField>
+      <Label>企业 ID</Label> <TextField onChange={onCorpIdChange} value={wechat.corp_id ?? ''}></TextField>
       <Label>Agent ID</Label> <TextField onChange={onAgentIdChange} value={wechat.agent_id ? wechat.agent_id.toString() : ""}></TextField>
-      <Label>Secret</Label> <TextField onChange={onSecretChange} value={wechat.secret}></TextField>
-      <Label>Telegram Bot Token</Label> <TextField onChange={onBotTokenChange} value={wechat.telegram_bot_token}></TextField>
-      <Label>Telegram Chat Id</Label> <TextField onChange={onChatIdChange} value={wechat.telegram_chat_id}></TextField>
-      <Label>黑名单(使用英语逗号,分隔的一系列字符串, 如果消息包含任意一个, 将不会推送.)</Label> <TextField onChange={onBlockListChange} value={user.block_list}></TextField>
-      <Checkbox styles={{ root: { marginTop: '10px' } }} label='验证码检测(讲较长的短信中的验证码提取在第一行显示)(Beta)' onChange={onCaptchaChange} checked={user.captcha} />
+      <Label>Secret</Label> <TextField onChange={onSecretChange} value={wechat.secret ?? ''}></TextField>
+      <Label>Telegram Bot Token</Label> <TextField onChange={onBotTokenChange} value={wechat.telegram_bot_token ?? ''}></TextField>
+      <Label>Telegram Chat Id</Label> <TextField onChange={onChatIdChange} value={wechat.telegram_chat_id ?? ''}></TextField>
+      <Label>黑名单(使用英语逗号,分隔的一系列字符串, 如果消息包含任意一个, 将不会推送.)</Label> <TextField onChange={onBlockListChange} value={user.block_list ?? ''}></TextField>
+      <Checkbox styles={{ root: { marginTop: '10px' } }} label='验证码检测(将较长的短信中的验证码提取在第一行显示)(Beta)' onChange={onCaptchaChange} checked={user.captcha ?? false} />
       <PrimaryButton style={{ marginTop: '10px' }} onClick={update}>更新</PrimaryButton>
 
       <DefaultButton
