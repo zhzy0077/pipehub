@@ -122,6 +122,7 @@ pub async fn send(
     }
 
     let wechat_future: BoxFuture<Result<()>> = if !wechat.corp_id.is_empty() {
+        info!("{} [Send] [WeChat] {}", request_id, key);
         Box::pin(send_wechat(
             app_id,
             access_token_cache,
@@ -135,10 +136,9 @@ pub async fn send(
     };
 
     let telegram_future: BoxFuture<Result<()>> = if !wechat.bot_token.is_empty() {
-        info!("{} [Send] [WeChat] {}", request_id, key);
+        info!("{} [Send] [Telegram] {}", request_id, key);
         Box::pin(send_telegram(&http_client, &wechat, &text))
     } else {
-        info!("{} [Send] [Telegram] {}", request_id, key);
         Box::pin(ok(()))
     };
 
