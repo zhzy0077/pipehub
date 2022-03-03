@@ -26,7 +26,7 @@ reqwest = { version = "0.10", features = ["json", "rustls-tls"], default-feature
 regex = { version = "1.5", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sqlx = { version = "0.4", features = ["runtime-tokio-rustls", "macros", "migrate", "postgres"], default-features = false }
+sqlx = { version = "0.5", features = ["runtime-tokio-rustls", "macros", "migrate", "postgres"], default-features = false }
 tokio = { version = "0.2" }
 url = "2.1"
 uuid = { version = "0.8", features = ["v4"] }
