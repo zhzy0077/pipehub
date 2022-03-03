@@ -9,6 +9,7 @@ use crate::send::WeChatAccessToken;
 
 use crate::microsoft::MicrosoftClient;
 use actix_cors::Cors;
+use actix_files::Files;
 use actix_http::HttpMessage;
 use actix_session::CookieSession;
 use actix_web::middleware::Logger;
@@ -90,6 +91,7 @@ async fn main() -> Result<()> {
                     .route(web::get().to(send::send))
                     .route(web::post().to(send::send)),
             )
+            .service(Files::new("/", "./static/").use_hidden_files())
     })
     .bind(config.bind_addr())?
     .run()
