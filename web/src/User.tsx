@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack, Checkbox } from '@fluentui/react';
 import { useBoolean } from '@fluentui/react-hooks';
+import { backend } from './Constants';
 import Send from './Send';
-
-const backend = process.env.BACKEND_URL ?? "https://api.pipehub.net";
 
 function User() {
   const [user, setUser] = useState({} as UserEntity);
