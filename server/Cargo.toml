@@ -6,7 +6,7 @@ edition = "2021"
 repository = "https://github.com/zhzy0077/PipeHub"
 
 [dependencies]
-actix-cors = "0.5"
+actix-cors = "0.6"
 actix-files = "0.5"
 actix-http = { version = "2.2", features = [ "rustls" ], default-features = false }
 actix-rt = "1.1"
