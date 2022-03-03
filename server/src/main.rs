@@ -7,6 +7,7 @@ use crate::github::GitHubClient;
 use crate::request_id::{RequestId, RequestIdAware};
 use crate::send::WeChatAccessToken;
 
+use crate::microsoft::MicrosoftClient;
 use actix_cors::Cors;
 use actix_http::HttpMessage;
 use actix_session::CookieSession;
@@ -23,6 +24,7 @@ mod config;
 mod data;
 mod error;
 mod github;
+mod microsoft;
 mod models;
 mod request_id;
 mod send;
@@ -47,6 +49,7 @@ async fn main() -> Result<()> {
 
     let pool = web::Data::new(pool);
     let github_client = web::Data::new(github_client(&config));
+    let microsoft_client = web::Data::new(microsoft_client(&config));
     let access_token_cache: web::Data<AccessTokenCache> = web::Data::new(DashMap::new());
     let http_client = web::Data::new(http_client());
 
@@ -66,6 +69,7 @@ async fn main() -> Result<()> {
         App::new()
             .app_data(pool.clone())
             .app_data(github_client.clone())
+            .app_data(microsoft_client.clone())
             .app_data(access_token_cache.clone())
             .app_data(http_client.clone())
             .wrap(cors)
@@ -77,6 +81,8 @@ async fn main() -> Result<()> {
             .service(user::update)
             .service(user::callback)
             .service(user::login)
+            .service(user::msft_auth_url)
+            .service(user::msft_callback)
             .service(wechat::wechat)
             .service(wechat::update)
             .service(
@@ -110,6 +116,14 @@ fn github_client(config: &PipeHubConfig) -> GitHubClient {
         config.github.client_id.clone(),
         config.github.client_secret.clone(),
         &config.github.callback_url,
+    )
+}
+
+fn microsoft_client(config: &PipeHubConfig) -> MicrosoftClient {
+    MicrosoftClient::new(
+        config.microsoft.client_id.clone(),
+        config.microsoft.client_secret.clone(),
+        &config.microsoft.callback_url,
     )
 }
 

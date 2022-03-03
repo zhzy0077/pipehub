@@ -13,6 +13,8 @@ pub struct Tenant {
     pub github_id: i64,
     pub block_list: String,
     pub captcha: bool,
+    pub msft_refresh_token: String,
+    pub msft_task_list_id: String,
 }
 
 #[derive(Serialize)]
@@ -45,6 +47,8 @@ impl Tenant {
             github_id,
             block_list: "".to_string(),
             captcha: false,
+            msft_refresh_token: "".to_string(),
+            msft_task_list_id: "".to_string(),
         }
     }
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack, Checkbox } from '@fluentui/react';
+import { Label, TextField, PrimaryButton, Separator, Text, DefaultButton, Callout, Stack, Checkbox, Icon, FontSizes } from '@fluentui/react';
 import { useBoolean } from '@fluentui/react-hooks';
 import { backend } from './Constants';
 import Send from './Send';
@@ -107,6 +107,13 @@ function User() {
     });
   }
 
+  const onMicrosoftListIdChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newVal?: string) => {
+    setUser({
+      ...user,
+      msft_task_list_id: newVal || '',
+    });
+  }
+
   const onCaptchaChange = (event: React.FormEvent<HTMLInputElement | HTMLElement> | undefined, newVal?: boolean) => {
     setUser({
       ...user,
@@ -127,6 +134,15 @@ function User() {
     });
   }
 
+  const msftLogin = () => {
+    fetch(`${backend}/msft_auth_url`, {
+      credentials: 'include'
+    })
+      .then(res => {
+        window.location.href = res.headers.get("Location") ?? "/";
+      })
+  };
+
   return (
     <div>
       <Label>GitHub 账号</Label> <TextField readOnly value={user.github_login ?? ''}></TextField>
@@ -139,6 +155,10 @@ function User() {
       <Label>Telegram Chat Id</Label> <TextField onChange={onChatIdChange} value={wechat.telegram_chat_id ?? ''}></TextField>
       <Label>黑名单(使用英语逗号,分隔的一系列字符串, 如果消息包含任意一个, 将不会推送.)</Label> <TextField onChange={onBlockListChange} value={user.block_list ?? ''}></TextField>
       <Checkbox styles={{ root: { marginTop: '10px' } }} label='验证码检测(将较长的短信中的验证码提取在第一行显示)(Beta)' onChange={onCaptchaChange} checked={user.captcha ?? false} />
+      <Label>Microsoft Todo List Id</Label> 
+      <TextField onChange={onMicrosoftListIdChange} value={user.msft_task_list_id ?? ''}></TextField>
+      <DefaultButton style={{ marginTop: '10px' }} text="Microsoft 登录" onClick={msftLogin}/> 
+      { user.msft_refresh_token != "" && <Icon style={{ fontSize: FontSizes.icon, marginLeft: '5px' }} iconName="Accept" /> } <br/>
       <PrimaryButton style={{ marginTop: '10px' }} onClick={update}>更新</PrimaryButton>
 
       <DefaultButton
@@ -190,6 +210,8 @@ export interface UserEntity {
   callback_url: string,
   block_list: string,
   captcha: boolean,
+  msft_refresh_token: string,
+  msft_task_list_id: string,
 }
 
 export interface Wechat {

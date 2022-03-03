@@ -74,13 +74,17 @@ impl Pool {
     }
 
     pub async fn update_tenant(&self, tenant: Tenant) -> Result<()> {
-        sqlx::query("UPDATE tenants SET app_id = $1, block_list = $2, captcha = $3 WHERE id = $4")
-            .bind(tenant.app_id)
-            .bind(tenant.block_list)
-            .bind(tenant.captcha)
-            .bind(tenant.id)
-            .execute(&self.inner)
-            .await?;
+        sqlx::query(
+            "UPDATE tenants SET app_id = $1, block_list = $2, captcha = $3, msft_refresh_token = $4, msft_task_list_id = $5 WHERE id = $6",
+        )
+        .bind(tenant.app_id)
+        .bind(tenant.block_list)
+        .bind(tenant.captcha)
+        .bind(tenant.msft_refresh_token)
+        .bind(tenant.msft_task_list_id)
+        .bind(tenant.id)
+        .execute(&self.inner)
+        .await?;
 
         Ok(())
     }
