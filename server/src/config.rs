@@ -13,14 +13,20 @@ pub struct PipeHubConfig {
     pub https: bool,
     pub database_url: String,
     pub github: GitHubConfig,
+    pub microsoft: MicrosoftConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GitHubConfig {
     pub client_id: String,
     pub client_secret: String,
-    pub auth_url: String,
-    pub token_url: String,
+    pub callback_url: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MicrosoftConfig {
+    pub client_id: String,
+    pub client_secret: String,
     pub callback_url: String,
 }
 

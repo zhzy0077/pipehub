@@ -1,7 +1,7 @@
 use crate::data::Pool;
 use crate::error::{Error, Result};
 use crate::models::WechatWork;
-use crate::{AccessTokenCache, RequestId, Response};
+use crate::{AccessTokenCache, MicrosoftClient, RequestId, Response};
 
 use crate::captcha;
 use actix_web::{web, Error as AWError, HttpResponse};
@@ -79,6 +79,7 @@ pub async fn send(
     access_token_cache: web::Data<AccessTokenCache>,
     http_client: web::Data<Client>,
     request_id: RequestId,
+    microsoft_client: web::Data<MicrosoftClient>,
 ) -> std::result::Result<HttpResponse, AWError> {
     let key = key.into_inner();
     let app_key = key.clone().from_base58().map_err(Error::from)?;
@@ -117,8 +118,21 @@ pub async fn send(
         return Err(Error::User("Message blocked.").into());
     }
 
+    let header = captcha::captcha(&text);
+    let mut msft_future: BoxFuture<Result<()>> = Box::pin(ok(()));
     if tenant.captcha {
-        text = captcha::captcha(text);
+        text = format!("{}\n{}", header, text);
+        if !tenant.msft_task_list_id.is_empty() && (text.contains("菜鸟") || text.contains("快递"))
+        {
+            info!("{} [Add] [Todo]", request_id);
+            msft_future = Box::pin(microsoft_client.post_task(
+                &http_client,
+                &tenant.msft_refresh_token,
+                &tenant.msft_task_list_id,
+                &header,
+                &text,
+            ))
+        }
     }
 
     let wechat_future: BoxFuture<Result<()>> = if !wechat.corp_id.is_empty() {
@@ -144,9 +158,10 @@ pub async fn send(
 
     let wechat_result: Result<()> = wechat_future.await;
     let telegram_result: Result<()> = telegram_future.await;
+    let msft_result: Result<()> = msft_future.await;
 
     Ok(HttpResponse::Ok().json(Response {
-        success: wechat_result.is_ok() || telegram_result.is_ok(),
+        success: (wechat_result.is_ok() || telegram_result.is_ok()) && msft_result.is_ok(),
         error_message: "".to_owned(),
     }))
 }

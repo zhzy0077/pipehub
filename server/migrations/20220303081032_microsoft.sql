@@ -1,0 +1,5 @@
+ALTER TABLE TENANTS
+    ADD msft_refresh_token VARCHAR DEFAULT '';
+
+ALTER TABLE TENANTS
+    ADD msft_task_list_id VARCHAR DEFAULT '';

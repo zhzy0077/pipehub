@@ -2,7 +2,7 @@ use crate::data::Pool;
 use crate::github::GitHubClient;
 use crate::models::{Tenant, UserTenant};
 
-use crate::RequestId;
+use crate::{MicrosoftClient, RequestId};
 use actix_http::body::Body;
 use actix_session::Session;
 use actix_web::error::Error as AWError;
@@ -81,6 +81,49 @@ pub async fn login(
         .body(Body::Empty))
 }
 
+#[get("/msft_auth_url")]
+pub async fn msft_auth_url(
+    session: Session,
+    client: web::Data<MicrosoftClient>,
+) -> std::result::Result<HttpResponse, AWError> {
+    let state = new_csrf_token();
+    let url = client.authorize_url(&state);
+    session.set(STATE_KEY, state)?;
+    Ok(HttpResponse::Ok()
+        .header("Location", url.to_string())
+        .body(Body::Empty))
+}
+
+#[get("/msft_callback")]
+pub async fn msft_callback(
+    session: Session,
+    microsoft_client: web::Data<MicrosoftClient>,
+    http_client: web::Data<Client>,
+    web::Query(msft_callback): web::Query<Callback>,
+    pool: web::Data<Pool>,
+) -> std::result::Result<HttpResponse, AWError> {
+    if let Some(state) = session.get::<String>(STATE_KEY)? {
+        if state == msft_callback.state {
+            if let Some(tenant_id) = session.get::<i64>(TENANT_ID_KEY)? {
+                if let Some(mut tenant) = pool.find_tenant_by_id(tenant_id).await? {
+                    let refresh_token = microsoft_client
+                        .exchange_refresh_code(&http_client, &msft_callback.code)
+                        .await?;
+
+                    tenant.msft_refresh_token = refresh_token;
+                    pool.update_tenant(tenant).await?;
+                }
+            }
+        }
+    }
+    Ok(HttpResponse::Found()
+        .header(
+            "Location",
+            format!("{}/#/user", env::var("pipehub_domain_web").unwrap()),
+        )
+        .body(Body::Empty))
+}
+
 #[get("/callback")]
 pub async fn callback(
     session: Session,
@@ -140,6 +183,8 @@ pub async fn reset_key(
                 github_id: tenant.github_id,
                 block_list: tenant.block_list,
                 captcha: tenant.captcha,
+                msft_refresh_token: tenant.msft_refresh_token,
+                msft_task_list_id: tenant.msft_task_list_id,
             };
             pool.update_tenant(new_tenant.clone()).await?;
 
@@ -168,6 +213,8 @@ pub async fn update(
                 github_id: tenant.github_id,
                 block_list: new_tenant.block_list,
                 captcha: new_tenant.captcha,
+                msft_refresh_token: tenant.msft_refresh_token,
+                msft_task_list_id: new_tenant.msft_task_list_id,
             };
             pool.update_tenant(new_tenant.clone()).await?;
 
