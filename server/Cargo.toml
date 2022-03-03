@@ -11,7 +11,7 @@ actix-files = "0.5"
 actix-http = { version = "2.2", features = [ "rustls" ], default-features = false }
 actix-rt = "1.1"
 actix-session = "0.4"
-actix-web = { version = "3.3", features = [ "rustls" ], default-features = false }
+actix-web = { version = "4.0", features = [ "rustls" ], default-features = false }
 base58 = "0.2"
 config = "0.10"
 dashmap = "5.1"
