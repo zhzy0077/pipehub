@@ -188,7 +188,9 @@ async fn send_telegram(
 
     if !response.ok {
         return Err(Error::Dependency(
-            response.description.unwrap_or("Unknown Error".to_string()),
+            response
+                .description
+                .unwrap_or_else(|| "Unknown Error".to_string()),
         ));
     }
 
@@ -205,7 +207,7 @@ async fn send_wechat(
 ) -> Result<()> {
     let mut token = access_token_cache.get(&app_id);
     if token.is_none() || token.as_ref().unwrap().expires_at.le(&Instant::now()) {
-        let new_token = get_token(&http_client, wechat).await?;
+        let new_token = get_token(http_client, wechat).await?;
         access_token_cache.insert(app_id, new_token);
         token = access_token_cache.get(&app_id);
     }
@@ -213,7 +215,7 @@ async fn send_wechat(
     let mut token = token.unwrap();
     let mut retry_count = 0;
     while let Err(e) = do_send(
-        &http_client,
+        http_client,
         wechat,
         token.value(),
         text.to_string(),
@@ -222,11 +224,11 @@ async fn send_wechat(
     .await
     {
         if retry_count > 3 {
-            return Err(e.into());
+            return Err(e);
         } else {
             retry_count += 1;
         }
-        let new_token = get_token(&http_client, &wechat).await?;
+        let new_token = get_token(http_client, wechat).await?;
         access_token_cache.insert(app_id, new_token);
         token = access_token_cache.get(&app_id).unwrap();
     }

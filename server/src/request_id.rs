@@ -34,7 +34,7 @@ impl FromRequest for RequestId {
             req.extensions()
                 .get::<RequestId>()
                 .map(RequestId::clone)
-                .ok_or(Error::Unexpected("Missing request id.".to_string())),
+                .ok_or_else(|| Error::Unexpected("Missing request id.".to_string())),
         )
     }
 }
@@ -82,7 +82,7 @@ where
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        req.extensions_mut().insert(self.id.clone());
+        req.extensions_mut().insert(self.id);
         let fut = self.service.call(req);
 
         let request_id = self.id.to_string();

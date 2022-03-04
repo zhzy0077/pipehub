@@ -7,7 +7,7 @@ lazy_static! {
 }
 
 pub fn captcha(content: &str) -> String {
-    if let Some(captures) = RE.captures(&content) {
+    if let Some(captures) = RE.captures(content) {
         return format!("{} - {}", &captures["Number"], &captures["Sender"]);
     }
     String::new()

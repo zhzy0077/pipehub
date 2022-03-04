@@ -42,7 +42,7 @@ impl PipeHubConfig {
     }
 
     pub fn bind_addr(&self) -> String {
-        let port = env::var("PORT").unwrap_or(self.port.to_string());
+        let port = env::var("PORT").unwrap_or_else(|_| self.port.to_string());
         format!("{}:{}", self.host, port)
     }
 }
