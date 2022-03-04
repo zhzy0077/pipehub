@@ -35,7 +35,7 @@ mod wechat;
 
 pub type AccessTokenCache = DashMap<i64, WeChatAccessToken>;
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> Result<()> {
     dotenv().ok();
     env_logger::init();
@@ -93,6 +93,7 @@ async fn main() -> Result<()> {
             )
             .service(Files::new("/", "./static/").use_hidden_files())
     })
+    .workers(num_cpus::get())
     .bind(config.bind_addr())?
     .run()
     .await?;

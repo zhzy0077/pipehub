@@ -1,7 +1,6 @@
-use actix_http::body::Body;
-use actix_http::http::StatusCode;
-use actix_http::{Response, ResponseError};
-use actix_web::HttpResponse;
+use actix_http::body::BoxBody;
+use actix_web::http::StatusCode;
+use actix_web::{HttpResponse, ResponseError};
 use sqlx::migrate::MigrateError;
 use std::fmt;
 use std::fmt::Display;
@@ -34,7 +33,7 @@ impl ResponseError for Error {
         }
     }
 
-    fn error_response(&self) -> Response<Body> {
+    fn error_response(&self) -> HttpResponse<BoxBody> {
         HttpResponse::build(self.status_code()).json(crate::Response {
             success: self.status_code().is_success(),
             error_message: self.to_string(),
@@ -68,12 +67,6 @@ impl From<serde_json::Error> for Error {
 impl From<base58::FromBase58Error> for Error {
     fn from(e: base58::FromBase58Error) -> Self {
         Error::Unexpected(format!("{:?}", e))
-    }
-}
-
-impl From<actix_http::client::SendRequestError> for Error {
-    fn from(e: actix_http::client::SendRequestError) -> Self {
-        Error::Dependency(format!("{:?}", e))
     }
 }
 

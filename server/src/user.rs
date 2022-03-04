@@ -3,7 +3,6 @@ use crate::github::GitHubClient;
 use crate::models::{Tenant, UserTenant};
 
 use crate::{MicrosoftClient, RequestId};
-use actix_http::body::Body;
 use actix_session::Session;
 use actix_web::error::Error as AWError;
 use actix_web::{get, post, put, web, HttpResponse};
@@ -34,10 +33,10 @@ pub async fn user(
 
     let state = new_csrf_token();
     let url = client.authorize_url(&state);
-    session.set(STATE_KEY, state)?;
+    session.insert(STATE_KEY, state)?;
     Ok(HttpResponse::Unauthorized()
-        .header("Location", url.to_string())
-        .body(Body::Empty))
+        .append_header(("Location", url.to_string()))
+        .body(()))
 }
 
 fn new_csrf_token() -> String {
@@ -68,17 +67,17 @@ pub async fn login(
     let access_token = login.access_token;
     let github_user = github_client.get_user(&http_client, &access_token).await?;
     match pool.find_tenant_by_github_id(github_user.id).await? {
-        Some(tenant) => session.set(TENANT_ID_KEY, tenant.id)?,
+        Some(tenant) => session.insert(TENANT_ID_KEY, tenant.id)?,
         None => {
             let app_id: i64 = thread_rng().gen();
             let tenant = Tenant::new(app_id, github_user.login, github_user.id);
             let tenant = pool.insert_tenant(tenant).await?;
-            session.set(TENANT_ID_KEY, tenant.id)?
+            session.insert(TENANT_ID_KEY, tenant.id)?
         }
     }
     Ok(HttpResponse::Found()
-        .header("Location", "/#/user")
-        .body(Body::Empty))
+        .append_header(("Location", "/#/user"))
+        .body(()))
 }
 
 #[get("/msft_auth_url")]
@@ -88,10 +87,10 @@ pub async fn msft_auth_url(
 ) -> std::result::Result<HttpResponse, AWError> {
     let state = new_csrf_token();
     let url = client.authorize_url(&state);
-    session.set(STATE_KEY, state)?;
+    session.insert(STATE_KEY, state)?;
     Ok(HttpResponse::Ok()
-        .header("Location", url.to_string())
-        .body(Body::Empty))
+        .append_header(("Location", url.to_string()))
+        .body(()))
 }
 
 #[get("/msft_callback")]
@@ -117,11 +116,11 @@ pub async fn msft_callback(
         }
     }
     Ok(HttpResponse::Found()
-        .header(
+        .append_header((
             "Location",
             format!("{}/#/user", env::var("pipehub_domain_web").unwrap()),
-        )
-        .body(Body::Empty))
+        ))
+        .body(()))
 }
 
 #[get("/callback")]
@@ -143,29 +142,29 @@ pub async fn callback(
             match pool.find_tenant_by_github_id(github_user.id).await? {
                 Some(tenant) => {
                     info!("{} [Login] {}", request_id, github_user.login);
-                    session.set(TENANT_ID_KEY, tenant.id)?
+                    session.insert(TENANT_ID_KEY, tenant.id)?
                 }
                 None => {
                     let app_id: i64 = thread_rng().gen();
                     info!("{} [Register] {}", request_id, github_user.login);
                     let tenant = Tenant::new(app_id, github_user.login, github_user.id);
                     let tenant = pool.insert_tenant(tenant).await?;
-                    session.set(TENANT_ID_KEY, tenant.id)?
+                    session.insert(TENANT_ID_KEY, tenant.id)?
                 }
             }
             Ok(HttpResponse::Found()
-                .header(
+                .append_header((
                     "Location",
                     format!("{}/#/user", env::var("pipehub_domain_web").unwrap()),
-                )
-                .body(Body::Empty))
+                ))
+                .body(()))
         }
         _ => Ok(HttpResponse::Found()
-            .header(
+            .append_header((
                 "Location",
                 format!("{}/", env::var("pipehub_domain_web").unwrap()),
-            )
-            .body(Body::Empty)),
+            ))
+            .body(())),
     }
 }
 
@@ -192,7 +191,7 @@ pub async fn reset_key(
         };
     }
 
-    Ok(HttpResponse::Unauthorized().body(Body::Empty))
+    Ok(HttpResponse::Unauthorized().body(()))
 }
 
 #[put("/user")]
@@ -222,5 +221,5 @@ pub async fn update(
         };
     }
 
-    Ok(HttpResponse::Unauthorized().body(Body::Empty))
+    Ok(HttpResponse::Unauthorized().body(()))
 }

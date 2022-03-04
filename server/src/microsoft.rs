@@ -1,5 +1,5 @@
 use crate::error::Result;
-use actix_http::http::header;
+use actix_web::http::header;
 use reqwest::Client;
 use serde::Deserialize;
 use serde::Serialize;

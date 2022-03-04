@@ -3,7 +3,6 @@ use crate::models::WechatWork;
 use crate::user::TENANT_ID_KEY;
 use crate::RequestId;
 use actix_session::Session;
-use actix_web::body::Body;
 use actix_web::{get, put, web, Error as AWError, HttpResponse};
 use log::info;
 
@@ -22,7 +21,7 @@ pub async fn wechat(
             Ok(HttpResponse::Ok().json(WechatWork::default()))
         }
     } else {
-        Ok(HttpResponse::Unauthorized().body(Body::Empty))
+        Ok(HttpResponse::Unauthorized().body(()))
     }
 }
 
@@ -40,8 +39,8 @@ pub async fn update(
         entity.corp_id = entity.corp_id.trim().to_string();
         entity.secret = entity.secret.trim().to_string();
         pool.upsert_wechat(entity).await?;
-        Ok(HttpResponse::NoContent().body(Body::Empty))
+        Ok(HttpResponse::NoContent().body(()))
     } else {
-        Ok(HttpResponse::Unauthorized().body(Body::Empty))
+        Ok(HttpResponse::Unauthorized().body(()))
     }
 }

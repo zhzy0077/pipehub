@@ -1,7 +1,7 @@
 use crate::error::Error;
-use actix_http::http::{HeaderName, HeaderValue};
 use actix_http::{HttpMessage, Payload};
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
+use actix_web::http::header::{HeaderName, HeaderValue};
 use actix_web::{Error as AWError, FromRequest, HttpRequest};
 use futures_util::future::{ok, ready, Ready};
 use std::fmt::{Display, Formatter};
@@ -28,7 +28,6 @@ impl RequestId {
 impl FromRequest for RequestId {
     type Error = Error;
     type Future = Ready<Result<Self, Self::Error>>;
-    type Config = ();
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         ready(
@@ -42,13 +41,12 @@ impl FromRequest for RequestId {
 
 pub struct RequestIdAware;
 
-impl<S, B> Transform<S> for RequestIdAware
+impl<S, B> Transform<S, ServiceRequest> for RequestIdAware
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = AWError>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = AWError>,
     S::Future: 'static,
     B: 'static,
 {
-    type Request = S::Request;
     type Response = S::Response;
     type Error = S::Error;
     type Transform = RequestIdMiddleware<S>;
@@ -69,22 +67,21 @@ pub struct RequestIdMiddleware<S> {
     id: RequestId,
 }
 
-impl<S, B> Service for RequestIdMiddleware<S>
+impl<S, B> Service<ServiceRequest> for RequestIdMiddleware<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = AWError>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = AWError>,
     S::Future: 'static,
     B: 'static,
 {
-    type Request = S::Request;
     type Response = S::Response;
     type Error = S::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, ctx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, ctx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(ctx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         req.extensions_mut().insert(self.id.clone());
         let fut = self.service.call(req);
 
