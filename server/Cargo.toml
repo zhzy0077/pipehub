@@ -6,14 +6,13 @@ edition = "2021"
 repository = "https://github.com/zhzy0077/PipeHub"
 
 [dependencies]
-actix-cors = "0.5"
-actix-files = "0.5"
-actix-http = { version = "2.2", features = [ "rustls" ], default-features = false }
-actix-rt = "1.1"
-actix-session = "0.4"
-actix-web = { version = "3.3", features = [ "rustls" ], default-features = false }
+actix-cors = "0.6"
+actix-files = "0.6"
+actix-http = { version = "3.0", default-features = false }
+actix-session = "0.5"
+actix-web = { version = "^4.0", features = [ "macros" ], default-features = false }
 base58 = "0.2"
-config = "0.10"
+config = "0.12"
 dashmap = "5.1"
 dotenv = "0.15"
 futures-util = "0.3"
@@ -21,12 +20,11 @@ lazy_static = "1.4"
 log = "0.4"
 env_logger = "0.9"
 num_cpus = "1.13"
-rand = "0.7"
-reqwest = { version = "0.10", features = ["json", "rustls-tls"], default-features = false }
+rand = "0.8"
+reqwest = { version = "0.11", features = ["json"] }
 regex = { version = "1.5", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sqlx = { version = "0.4", features = ["runtime-tokio-rustls", "macros", "migrate", "postgres"], default-features = false }
-tokio = { version = "0.2" }
+sqlx = { version = "0.5", features = ["runtime-tokio-native-tls", "macros", "migrate", "postgres"], default-features = false }
 url = "2.1"
 uuid = { version = "0.8", features = ["v4"] }
