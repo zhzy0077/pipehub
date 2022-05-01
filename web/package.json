@@ -6,7 +6,7 @@
     "@fluentui/react": "^8.55.2",
     "@types/jest": "^26.0.5",
     "@types/node": "^17.0.17",
-    "@types/react": "^16.14.23",
+    "@types/react": "^17.0.44",
     "@types/react-dom": "^16.9.0",
     "@types/react-router-dom": "^5.1.5",
     "@fluentui/theme": "^2.4.9",
