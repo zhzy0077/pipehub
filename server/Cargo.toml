@@ -8,7 +8,7 @@ repository = "https://github.com/zhzy0077/PipeHub"
 [dependencies]
 actix-cors = "0.6"
 actix-files = "0.6"
-actix-http = { version = "3.0", default-features = false }
+actix-http = { version = "3.2", default-features = false }
 actix-session = "0.5"
 actix-web = { version = "^4.0", features = [ "macros" ], default-features = false }
 base58 = "0.2"
