@@ -12,7 +12,7 @@ actix-http = { version = "3.0", default-features = false }
 actix-session = "0.5"
 actix-web = { version = "^4.0", features = [ "macros" ], default-features = false }
 base58 = "0.2"
-config = "0.10"
+config = "0.13"
 dashmap = "5.1"
 dotenv = "0.15"
 futures-util = "0.3"
