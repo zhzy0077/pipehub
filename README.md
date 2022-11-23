@@ -6,7 +6,7 @@ PipeHub
 ## Get started
 It's a service that pipelines web request to your WeChat Account.
 
-Please visit https://www.pipehub.net/ and have a try.
+### Heroku no longer supports free dynos, so no more services.
 
 ## Availability
 According to our statistics, the overall availability during 6/18 and 7/2 is **99.67%**.
